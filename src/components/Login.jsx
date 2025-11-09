@@ -43,6 +43,7 @@ export default function Login() {
           return;
         }
         await signup(email, password, trimmedName);
+        sendWelcomeEmail(email, trimmedName);
       } else {
         await login(email, password);
       }
@@ -63,6 +64,18 @@ export default function Login() {
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function sendWelcomeEmail(email, name) {
+    try {
+      await fetch('/api/send-welcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name })
+      });
+    } catch (error) {
+      console.warn('No se pudo enviar el correo de bienvenida:', error);
     }
   }
 
