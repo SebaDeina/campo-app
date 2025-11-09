@@ -189,7 +189,7 @@ export default function Configuracion() {
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Campo App"
+              placeholder="Nimbo"
             />
           </div>
           <div className="input-group">

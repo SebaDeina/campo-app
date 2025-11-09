@@ -254,7 +254,7 @@ export default function Login() {
         )}
         
         <p style={{ textAlign: 'center', marginTop: '15px', color: 'var(--text-secondary)' }}>
-          {isSignup ? '¿Ya tienes cuenta?' : '¿Primera vez usando Campo App?'}{' '}
+          {isSignup ? '¿Ya tienes cuenta?' : '¿Primera vez usando Nimbo?'}{' '}
           <button
             type="button"
             onClick={() => setIsSignup(!isSignup)}

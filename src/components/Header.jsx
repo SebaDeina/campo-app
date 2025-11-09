@@ -160,7 +160,7 @@ export default function Header() {
             style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
           >
             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--primary)]/10">
-              <img src={logo} alt="Campo App" className="h-8 w-8 object-contain" />
+              <img src={logo} alt="Nimbo" className="h-8 w-8 object-contain" />
             </div>
             <div>
               <p className="text-lg font-semibold text-gray-900">Nimbo</p>

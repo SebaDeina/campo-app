@@ -46,7 +46,7 @@ export default function CampoOnboarding() {
       <div className="card" style={{ width: '100%', maxWidth: '640px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <div style={{ fontSize: '40px' }}>🐑</div>
-          <h1>Bienvenido a Campo App</h1>
+          <h1>Bienvenido a Nimbo</h1>
           <p style={{ marginTop: '10px', color: 'var(--text-secondary)' }}>
             Crea tu primer campo o acepta una invitación para comenzar a registrar tus datos.
           </p>

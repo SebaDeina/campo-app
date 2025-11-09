@@ -45,9 +45,9 @@ export default function Landing() {
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #f7fbf4 0%, #edf5e7 60%, #ffffff 100%)' }}>
       <header className="landing-header">
         <div className="landing-brand">
-          <img src={logoLarge} alt="Campo App" width={48} height={48} />
+          <img src={logoLarge} alt="Nimbo" width={48} height={48} />
           <div>
-            <p style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Campo App</p>
+            <p style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Nimbo</p>
             <p style={{ margin: 0, color: '#5f6f65', fontSize: '13px' }}>Gestión agro inteligente</p>
           </div>
         </div>
@@ -190,7 +190,7 @@ export default function Landing() {
       </main>
 
       <footer style={{ textAlign: 'center', padding: '30px 15px', color: '#6b7b6d', fontSize: '14px' }}>
-        © {new Date().getFullYear()} Campo App · Construido con productores para productores.
+        © {new Date().getFullYear()} Nimbo · Construido con productores para productores.
       </footer>
     </div>
   );

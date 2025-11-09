@@ -26,7 +26,7 @@ export default async function handler(req, res) {
         <table cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 20px 40px rgba(17, 37, 62, 0.1);">
           <tr>
             <td style="background:linear-gradient(135deg,#2e7d32 0%,#4caf50 100%);padding:32px 40px;color:#fff;">
-              <h1 style="margin:0;font-size:28px;">¡Bienvenido a Campo App!</h1>
+              <h1 style="margin:0;font-size:28px;">¡Bienvenido a Nimbo!</h1>
               <p style="margin:8px 0 0;font-size:16px;opacity:.9;">Tu panel inteligente para gestionar el campo.</p>
             </td>
           </tr>
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
             <td style="padding:32px 40px;color:#172b4d;">
               <p style="font-size:16px;margin:0 0 16px;">Hola ${safeName},</p>
               <p style="font-size:16px;margin:0 0 16px;line-height:1.6;">
-                Tu cuenta en <strong>Campo App</strong> se creó con éxito. Desde ahora podés registrar lluvias, organizar tareas,
+                Tu cuenta en <strong>Nimbo</strong> se creó con éxito. Desde ahora podés registrar lluvias, organizar tareas,
                 invitar a tu equipo y seguir el clima hiperlocal de tu campo.
               </p>
               <div style="background:#f5faf4;border-radius:12px;padding:18px 20px;margin:24px 0;">
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
                   <li>Registra las primeras lluvias o tareas del día.</li>
                 </ul>
               </div>
-              <p style="margin:0 0 24px;color:#51606a;">Estamos construyendo Campo App junto a productores como vos. Cualquier sugerencia es bienvenida.</p>
+              <p style="margin:0 0 24px;color:#51606a;">Estamos construyendo Nimbo junto a productores como vos. Cualquier sugerencia es bienvenida.</p>
               <a href="https://campo-app.vercel.app/login" style="display:inline-block;padding:14px 28px;border-radius:999px;background:#2e7d32;color:#fff;text-decoration:none;font-weight:600;">
                 Entrar a mi cuenta
               </a>
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
           </tr>
           <tr>
             <td style="padding:24px 40px;background:#f8f9fb;color:#94a3b8;font-size:12px;text-align:center;">
-              © ${new Date().getFullYear()} Campo App · Gestión Agro Inteligente
+              © ${new Date().getFullYear()} Nimbo · Gestión Agro Inteligente
             </td>
           </tr>
         </table>
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
     await resend.emails.send({
       from: process.env.RESEND_FROM,
       to: email,
-      subject: '¡Tu cuenta en Campo App está lista!',
+      subject: '¡Tu cuenta en Nimbo está lista!',
       html
     });
 

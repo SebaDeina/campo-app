@@ -1,4 +1,4 @@
-# 🐑 Campo App - Gestión Agropecuaria
+# 🐑 Nimbo - Gestión Agropecuaria
 
 Aplicación completa para la gestión de un campo ovino con registro de ovejas, clima, lluvias y tareas.
 
