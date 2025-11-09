@@ -451,6 +451,21 @@ body {
   color: #b71c1c;
 }
 
+.ovejas-table .col-hide-mobile {
+  display: table-cell;
+}
+
+.ovejas-table th.col-hide-mobile,
+.ovejas-table td.col-hide-mobile {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .ovejas-table .col-hide-mobile {
+    display: none;
+  }
+}
+
 .ovejas-header {
   display: flex;
   justify-content: space-between;

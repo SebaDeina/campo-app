@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../firebase/AuthContext';
 import { useCampo } from '../firebase/CampoContext';
-import { LogOut, Settings, Map, Menu, X, Droplets, CalendarCheck, CloudSun, UserPlus } from 'lucide-react';
+import { LogOut, Settings, Map, Menu, X, Droplets, CalendarCheck, CloudSun, UserPlus, ListChecks } from 'lucide-react';
 import logo from '../img/icons8-grass-50.png';
 
 const NAV_LINKS = [
@@ -33,6 +33,12 @@ export default function Header() {
       label: 'Nueva tarea',
       icon: CalendarCheck,
       onClick: () => navigate('/app/tareas')
+    },
+    {
+      key: 'ovejas',
+      label: 'Gestionar ovejas',
+      icon: ListChecks,
+      onClick: () => navigate('/app/ovejas')
     },
     {
       key: 'clima',
@@ -86,6 +92,10 @@ export default function Header() {
   }
 
   const avatarLetter = currentUser?.displayName?.[0] || currentUser?.email?.[0] || 'U';
+  const avatarPhoto =
+    currentUser?.photoURL ||
+    currentUser?.providerData?.find((provider) => provider.photoURL)?.photoURL ||
+    null;
 
   function renderLink(item, variant) {
     const isActive = location.pathname === item.to;
@@ -125,17 +135,14 @@ export default function Header() {
     const currentCampo = campos.find((campo) => campo.id === selectedCampoId) || campos[0];
     const layoutClasses =
       variant === 'desktop'
-        ? 'flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-left shadow-sm'
-        : 'flex items-center gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-left shadow-sm w-full';
+        ? 'flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-left shadow-sm'
+        : 'flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-left shadow-sm w-full';
 
     return (
       <button className={layoutClasses} onClick={() => setCampoModalOpen(true)}>
-        <div className="rounded-full bg-[var(--primary)]/10 p-2 text-[var(--primary)]">
-          <Map size={18} />
-        </div>
-        <div>
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
-            Proyecto
+        <div className="flex items-center gap-1">
+          <div className="rounded-full bg-[var(--primary)]/10 p-1.5 text-[var(--primary)]">
+            <Map size={16} />
           </div>
           <div style={{ fontWeight: 600 }}>{currentCampo?.nombre || 'Seleccionar'}</div>
         </div>
@@ -176,15 +183,17 @@ export default function Header() {
                   onClick={() => setDesktopUserOpen((prev) => !prev)}
                   aria-label="Abrir menú de usuario"
                 >
-                  {currentUser.photoURL ? (
-                    <img src={currentUser.photoURL} alt="Avatar del usuario" className="h-10 w-10 rounded-full object-cover" />
+                  {avatarPhoto ? (
+                    <img src={avatarPhoto} alt="Avatar del usuario" className="h-10 w-10 rounded-full object-cover" />
                   ) : (
-                    avatarLetter.toUpperCase()
+                    <span className="text-base font-semibold text-gray-700">
+                      {avatarLetter.toUpperCase()}
+                    </span>
                   )}
                 </button>
 
                 {desktopUserOpen && (
-                  <div className="absolute right-0 mt-2 w-60 rounded-xl bg-white p-3 text-sm text-gray-700 shadow-lg ring-1 ring-black/5">
+                  <div className="absolute right-0 mt-2 w-60 rounded-xl bg-white p-3 text-sm text-gray-700 shadow-lg ring-1 ring-black/5 z-50">
                     <div className="mb-3 border-b border-gray-100 pb-3">
                       <p className="font-semibold">{currentUser.displayName || 'Mi cuenta'}</p>
                       <p className="text-xs text-gray-500">{currentUser.email}</p>
@@ -213,10 +222,12 @@ export default function Header() {
           <div className="flex items-center gap-3 md:hidden">
             {currentUser && (
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-700">
-                {currentUser.photoURL ? (
-                  <img src={currentUser.photoURL} alt="Avatar del usuario" className="h-10 w-10 rounded-full object-cover" />
+                {avatarPhoto ? (
+                  <img src={avatarPhoto} alt="Avatar del usuario" className="h-10 w-10 rounded-full object-cover" />
                 ) : (
-                  avatarLetter.toUpperCase()
+                  <span className="text-base font-semibold text-gray-700">
+                    {avatarLetter.toUpperCase()}
+                  </span>
                 )}
               </div>
             )}
@@ -283,18 +294,20 @@ export default function Header() {
         )}
 
         {!mobileMenuOpen && (
-          <div className="mt-3 flex flex-wrap justify-center gap-2 pb-2 md:hidden">
-            {quickActions.map((action) => (
-              <button
-                key={`mobile-${action.key}`}
-                onClick={action.onClick}
-                className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm"
-                type="button"
-              >
-                <action.icon size={16} className="text-[var(--primary)]" />
-                <span>{action.label}</span>
-              </button>
-            ))}
+          <div className="mt-3 w-full overflow-x-auto pb-3 md:hidden">
+            <div className="flex w-max gap-2 pr-4">
+              {quickActions.map((action) => (
+                <button
+                  key={`mobile-${action.key}`}
+                  onClick={action.onClick}
+                  className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm whitespace-nowrap"
+                  type="button"
+                >
+                  <action.icon size={16} className="text-[var(--primary)]" />
+                  <span>{action.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>

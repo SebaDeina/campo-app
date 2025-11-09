@@ -6,13 +6,16 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [resetFeedback, setResetFeedback] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const location = useLocation();
   const initialMode = location.state?.mode === 'signup';
   const [isSignup, setIsSignup] = useState(initialMode);
   
-  const { login, signup } = useAuth();
+  const { login, signup, resetPassword, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,8 +26,10 @@ export default function Login() {
 
   useEffect(() => {
     setError('');
+    setResetFeedback('');
     if (!isSignup) {
       setDisplayName('');
+      setConfirmPassword('');
     }
   }, [isSignup]);
 
@@ -39,6 +44,11 @@ export default function Login() {
         const trimmedName = displayName.trim();
         if (!trimmedName) {
           setError('Necesitamos tu nombre para crear la cuenta');
+          setLoading(false);
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError('Las contraseñas deben coincidir');
           setLoading(false);
           return;
         }
@@ -67,6 +77,25 @@ export default function Login() {
     }
   }
 
+  async function handleResetPassword() {
+    if (!email) {
+      setError('Ingresá tu email para poder enviarte el enlace de recuperación');
+      return;
+    }
+    try {
+      setError('');
+      await resetPassword(email);
+      setResetFeedback('Te enviamos un enlace para restablecer la contraseña.');
+    } catch (err) {
+      console.error(err);
+      if (err.code === 'auth/user-not-found') {
+        setError('No encontramos una cuenta con ese email');
+      } else {
+        setError('No pudimos enviar el correo. Intenta más tarde.');
+      }
+    }
+  }
+
   async function sendWelcomeEmail(email, name) {
     try {
       await fetch('/api/send-welcome', {
@@ -76,6 +105,21 @@ export default function Login() {
       });
     } catch (error) {
       console.warn('No se pudo enviar el correo de bienvenida:', error);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    try {
+      setError('');
+      setResetFeedback('');
+      setGoogleLoading(true);
+      await loginWithGoogle();
+      navigate('/app');
+    } catch (err) {
+      console.error(err);
+      setError('No pudimos iniciar sesión con Google. Intenta nuevamente.');
+    } finally {
+      setGoogleLoading(false);
     }
   }
 
@@ -110,6 +154,7 @@ export default function Login() {
         </p>
         
         {error && <div className="alert alert-error">{error}</div>}
+        {resetFeedback && <div className="alert alert-success">{resetFeedback}</div>}
         
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           {isSignup && (
@@ -146,16 +191,67 @@ export default function Login() {
               placeholder="••••••••"
             />
           </div>
+
+          {isSignup && (
+            <div className="input-group">
+              <label>Repetir contraseña</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                placeholder="Confirma tu contraseña"
+              />
+            </div>
+          )}
           
           <button 
             type="submit" 
             className="btn btn-primary" 
-            disabled={loading}
+            disabled={loading || googleLoading}
             style={{ width: '100%' }}
           >
             {loading ? 'Cargando...' : (isSignup ? 'Crear Cuenta' : 'Ingresar')}
           </button>
         </form>
+
+        {!isSignup && (
+          <>
+            <div style={{ margin: '20px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+              <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>o</span>
+              <span style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ width: '100%', background: '#fff', color: '#000', border: '1px solid var(--border)', display: 'flex', gap: '10px', justifyContent: 'center', alignItems: 'center' }}
+              onClick={handleGoogleLogin}
+              disabled={googleLoading || loading}
+            >
+              {googleLoading ? 'Conectando...' : 'Continuar con Google'}
+            </button>
+          </>
+        )}
+        {!isSignup && (
+          <div style={{ marginTop: '15px' }}>
+            <button
+              type="button"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--primary)',
+                cursor: 'pointer',
+                padding: 0,
+                fontWeight: 600,
+                textDecoration: 'underline'
+              }}
+              onClick={handleResetPassword}
+            >
+              Olvidé mi contraseña
+            </button>
+          </div>
+        )}
         
         <p style={{ textAlign: 'center', marginTop: '15px', color: 'var(--text-secondary)' }}>
           {isSignup ? '¿Ya tienes cuenta?' : '¿Primera vez usando Campo App?'}{' '}

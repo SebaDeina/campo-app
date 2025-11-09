@@ -163,6 +163,30 @@ export default function Ovejas() {
 
   const { selectedCampoId, loadingCampos } = useCampo();
 
+  const ovejaActionRowStyle = {
+    display: 'flex',
+    gap: '10px',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    width: '100%',
+  };
+
+  const historialButtonStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    background: '#f4f7f3',
+    color: 'var(--primary)',
+    flex: '1 1 200px',
+  };
+
+  const primaryActionButtonStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flex: '1 1 200px',
+  };
+
   useEffect(() => {
     if (!selectedCampoId) {
       setOvejas([]);
@@ -552,16 +576,10 @@ export default function Ovejas() {
           </p>
         </div>
         {vista === 'listado' && (
-          <div className="ovejas-header-actions">
+          <div className="ovejas-header-actions" style={ovejaActionRowStyle}>
             <button
               className="btn"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: '#f2f8f0',
-                color: 'var(--primary)',
-              }}
+              style={historialButtonStyle}
               onClick={openHistorialModal}
             >
               <Clock size={18} />
@@ -574,7 +592,7 @@ export default function Ovejas() {
                 setShowModal(true);
               }}
               className="btn btn-primary"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              style={primaryActionButtonStyle}
             >
               <Plus size={20} />
               Agregar Oveja
@@ -618,16 +636,16 @@ export default function Ovejas() {
             </div>
           ) : (
             <div className="card table-scroll">
-              <table className="table">
+              <table className="table ovejas-table">
                 <thead>
                   <tr>
                     <th>Caravana</th>
-                    <th>Raza</th>
+                    <th className="col-hide-mobile">Raza</th>
                     <th>Sexo</th>
-                    <th>Edad</th>
+                    <th className="col-hide-mobile">Edad</th>
                     <th>Peso (kg)</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
+                    <th className="col-hide-mobile">Estado</th>
+                    <th className="col-hide-mobile">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -643,22 +661,22 @@ export default function Ovejas() {
                       <td>
                         <strong>{oveja.numeroCaravana}</strong>
                       </td>
-                      <td>{oveja.raza || 'N/A'}</td>
+                      <td className="col-hide-mobile">{oveja.raza || 'N/A'}</td>
                       <td style={{ textTransform: 'capitalize' }}>{oveja.sexo}</td>
-                      <td>{calcularEdad(oveja.fechaNacimiento)}</td>
+                      <td className="col-hide-mobile">{calcularEdad(oveja.fechaNacimiento)}</td>
                       <td>
                         {oveja.peso?.[oveja.peso.length - 1]?.valor
                           ? `${oveja.peso[oveja.peso.length - 1].valor} kg`
                           : 'N/A'}
                       </td>
-                      <td>
+                      <td className="col-hide-mobile">
                         {oveja.reproductivo?.gestante ? (
                           <span className="badge badge-gestante">Gestante</span>
                         ) : (
                           <span className="badge badge-normal">Normal</span>
                         )}
                       </td>
-                      <td onClick={(e) => e.stopPropagation()}>
+                      <td className="col-hide-mobile" onClick={(e) => e.stopPropagation()}>
                         <div className="table-actions">
                           <button
                             className="icon-btn"

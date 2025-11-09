@@ -305,18 +305,43 @@ export default function Lluvias() {
     );
   }
 
+  const actionRowStyle = {
+    display: 'flex',
+    gap: '10px',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    width: '100%',
+  };
+
+  const importButtonStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    background: '#f4f7f3',
+    color: 'var(--text)',
+    border: '1px solid var(--border)',
+    flex: '1 1 200px',
+  };
+
+  const primaryButtonStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flex: '1 1 200px',
+  };
+
   return (
     <div className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', gap: '15px', flexWrap: 'wrap' }}>
         <h1>Registro de Lluvias</h1>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={actionRowStyle}>
           <button 
             onClick={() => {
               setShowImportModal(true);
               setImportFeedback(null);
             }}
-            className="btn btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            className="btn"
+            style={importButtonStyle}
           >
             <Upload size={18} />
             Importar archivo
@@ -324,7 +349,7 @@ export default function Lluvias() {
           <button 
             onClick={() => setShowModal(true)}
             className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={primaryButtonStyle}
           >
             <Plus size={20} />
             Registrar Lluvia
