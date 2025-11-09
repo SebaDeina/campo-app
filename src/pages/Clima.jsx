@@ -2,18 +2,15 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Cloud, CloudRain, Sun, Wind, Droplets, Eye, Gauge } from 'lucide-react';
 import LocationSettings from '../components/LocationSettings';
-import { DEFAULT_LOCATION, readStoredLocation } from '../utils/locationPreferences';
+import { readStoredLocation } from '../utils/locationPreferences';
 
 export default function Clima() {
   const [clima, setClima] = useState(null);
   const [pronostico, setPronostico] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [ubicacion, setUbicacion] = useState(DEFAULT_LOCATION);
-  const [location, setLocation] = useState(() => {
-    const stored = readStoredLocation();
-    return stored ?? { lat: DEFAULT_LOCATION.lat, lon: DEFAULT_LOCATION.lon };
-  });
+  const [ubicacion, setUbicacion] = useState(null);
+  const [location, setLocation] = useState(() => readStoredLocation());
   const [hasCustomLocation, setHasCustomLocation] = useState(() => Boolean(readStoredLocation()));
 
   const API_KEY = 'd0cbb6d4d6401dd7894e6f6bc0eb131c'; // Obtener en https://openweathermap.org/api
@@ -275,7 +272,7 @@ export default function Clima() {
         <>
           <div className="card" style={{ marginBottom: '30px' }}>
             <h2 style={{ marginBottom: '20px', color: 'var(--primary)' }}>
-              Clima Actual - {ubicacion.ciudad}
+              Clima Actual - {ubicacion?.ciudad || 'Ubicación configurada'}
             </h2>
             
             <div className="grid grid-2">

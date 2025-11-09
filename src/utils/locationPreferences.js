@@ -1,8 +1,4 @@
-export const DEFAULT_LOCATION = {
-  lat: -34.6037,
-  lon: -58.3816,
-  ciudad: 'Buenos Aires'
-};
+export const DEFAULT_LOCATION = null;
 
 export const LOCATION_STORAGE_KEY = 'campoAppLocation';
 

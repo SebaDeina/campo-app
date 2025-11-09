@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MapPin, Link2 } from 'lucide-react';
 import { 
-  DEFAULT_LOCATION, 
   readStoredLocation, 
   saveStoredLocation, 
   clearStoredLocation 
@@ -37,12 +36,12 @@ export default function LocationSettings({
   description = 'Ingresa la latitud y longitud de tu campo para obtener datos precisos.',
   showHeader = true,
 }) {
-  const storedLocation = useMemo(() => readStoredLocation() ?? DEFAULT_LOCATION, []);
+  const storedLocation = useMemo(() => readStoredLocation(), []);
 
   const [location, setLocation] = useState(storedLocation);
   const [locationForm, setLocationForm] = useState({
-    lat: storedLocation.lat.toString(),
-    lon: storedLocation.lon.toString()
+    lat: storedLocation?.lat?.toString() || '',
+    lon: storedLocation?.lon?.toString() || ''
   });
   const [mapsUrl, setMapsUrl] = useState('');
   const [saving, setSaving] = useState(false);
@@ -50,7 +49,7 @@ export default function LocationSettings({
 
   useEffect(() => {
     if (onLocationChange) {
-      onLocationChange(storedLocation);
+      onLocationChange(storedLocation || null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -94,20 +93,19 @@ export default function LocationSettings({
 
   function handleReset() {
     clearStoredLocation();
-    const defaultCoords = { lat: DEFAULT_LOCATION.lat, lon: DEFAULT_LOCATION.lon };
-    setLocation(defaultCoords);
+    setLocation(null);
     setLocationForm({
-      lat: defaultCoords.lat.toString(),
-      lon: defaultCoords.lon.toString()
+      lat: '',
+      lon: ''
     });
     if (onLocationChange) {
-      onLocationChange(defaultCoords);
+      onLocationChange(null);
     }
     if (onLocationReset) {
-      onLocationReset(defaultCoords);
+      onLocationReset(null);
     }
     setMapsUrl('');
-    showFeedback('info', 'Ubicación restablecida a la predeterminada.');
+    showFeedback('info', 'Ubicación eliminada. Configura una nueva ubicación cuando estés listo.');
   }
 
   function handleGoogleMapsImport() {
