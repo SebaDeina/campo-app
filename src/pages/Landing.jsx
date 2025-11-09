@@ -43,16 +43,16 @@ export default function Landing() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #f7fbf4 0%, #edf5e7 60%, #ffffff 100%)' }}>
-      <header style={{ padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <header className="landing-header">
+        <div className="landing-brand">
           <img src={logoLarge} alt="Campo App" width={48} height={48} />
           <div>
             <p style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Campo App</p>
             <p style={{ margin: 0, color: '#5f6f65', fontSize: '13px' }}>Gestión agro inteligente</p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button className="btn" onClick={() => navigate('/login')} style={{ border: '1px solid var(--primary)', color: 'var(--primary)', background: 'transparent' }}>
+        <div className="landing-actions">
+          <button className="btn landing-secondary" onClick={() => navigate('/login')}>
             Iniciar sesión
           </button>
           <button className="btn btn-primary" onClick={() => navigate('/login', { state: { mode: 'signup' } })}>
@@ -72,11 +72,17 @@ export default function Landing() {
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <button
                 className="btn btn-primary"
-                style={{ background: '#ffeb3b', color: '#2e7d32' }}
+                style={{
+                  background: '#ffeb3b',
+                  color: '#2e7d32',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
                 onClick={() => navigate('/login', { state: { mode: 'signup' } })}
               >
                 Comenzar gratis
-                <ArrowRight size={18} style={{ marginLeft: '6px' }} />
+                <ArrowRight size={18} />
               </button>
               <button
                 className="btn"
