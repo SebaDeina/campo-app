@@ -4,6 +4,7 @@
   "description": "Aplicación de gestión agropecuaria",
   "private": true,
   "dependencies": {
+    "@vercel/analytics": "^1.5.0",
     "date-fns": "^3.0.0",
     "firebase": "^10.7.1",
     "lucide-react": "^0.294.0",
