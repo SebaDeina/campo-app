@@ -11,11 +11,21 @@ import Clima from './pages/Clima';
 import Lluvias from './pages/Lluvias';
 import Tareas from './pages/Tareas';
 import Configuracion from './pages/Configuracion';
+import PendingApproval from './pages/PendingApproval';
 import './styles/App.css';
 
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
-  return currentUser ? children : <Navigate to="/login" />;
+
+  if (!currentUser) {
+    return <Navigate to="/login" />;
+  }
+
+  if (currentUser.isApproved === false) {
+    return <Navigate to="/pending-approval" />;
+  }
+
+  return children;
 }
 
 import { Outlet } from 'react-router-dom';
@@ -91,6 +101,11 @@ function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/pending-approval" element={
+              <div style={{ minHeight: '100vh', background: 'var(--background)' }}>
+                <PendingApproval />
+              </div>
+            } />
             <Route
               path="/app"
               element={

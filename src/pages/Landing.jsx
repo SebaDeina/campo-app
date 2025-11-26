@@ -32,12 +32,6 @@ const STEPS = [
   { title: 'Gestiona el día a día', text: 'Carga lluvias, tareas y ovejas desde cualquier dispositivo.' }
 ];
 
-const STATS = [
-  { label: 'Campos activos', value: '120+' },
-  { label: 'Registros diarios', value: '8.5k' },
-  { label: 'Equipos colaborando', value: '300+' }
-];
-
 export default function Landing() {
   const navigate = useNavigate();
 
@@ -91,14 +85,6 @@ export default function Landing() {
               >
                 Ver la app
               </button>
-            </div>
-            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-              {STATS.map((stat) => (
-                <div key={stat.label}>
-                  <p style={{ fontSize: '28px', fontWeight: 700, margin: 0 }}>{stat.value}</p>
-                  <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)' }}>{stat.label}</p>
-                </div>
-              ))}
             </div>
           </div>
         </section>
