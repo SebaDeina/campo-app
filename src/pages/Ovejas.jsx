@@ -8,9 +8,10 @@ import {
   doc,
   updateDoc,
   orderBy,
+  deleteDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { Plus, Edit2, Trash2, X, Clock } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Clock, RotateCcw, Ban } from 'lucide-react';
 import { useCampo } from '../firebase/CampoContext';
 
 function dateFromInput(value) {
@@ -55,8 +56,8 @@ function GenealogiaView({ ovejas }) {
   const [filtro, setFiltro] = useState('');
   const visibles = filtro
     ? ovejas.filter((ov) =>
-        String(ov.numeroCaravana).toLowerCase().includes(filtro.toLowerCase())
-      )
+      String(ov.numeroCaravana).toLowerCase().includes(filtro.toLowerCase())
+    )
     : ovejas;
   const bloques = visibles.length ? visibles : ovejas;
 
@@ -144,6 +145,8 @@ export default function Ovejas() {
   });
   const [historial, setHistorial] = useState([]);
   const [historialLoading, setHistorialLoading] = useState(true);
+  const [papelera, setPapelera] = useState([]);
+  const [loadingPapelera, setLoadingPapelera] = useState(false);
   const [historialForm, setHistorialForm] = useState({
     numeroCaravana: '',
     fecha: new Date().toISOString().split('T')[0],
@@ -198,6 +201,7 @@ export default function Ovejas() {
 
     loadOvejas(selectedCampoId);
     loadHistorial(selectedCampoId);
+    loadPapelera(selectedCampoId);
   }, [selectedCampoId]);
 
   async function loadOvejas(campoId) {
@@ -237,6 +241,41 @@ export default function Ovejas() {
       console.error('Error cargando historial:', error);
     } finally {
       setHistorialLoading(false);
+    }
+  }
+
+  async function loadPapelera(campoId) {
+    try {
+      setLoadingPapelera(true);
+      const q = query(
+        collection(db, 'ovejas'),
+        where('campoId', '==', campoId),
+        where('activa', '==', false)
+      );
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+
+      // Filtrar últimos 10 días client-side
+      const limitDate = new Date();
+      limitDate.setDate(limitDate.getDate() - 10);
+
+      const recentDeleted = data.filter((ov) => {
+        if (!ov.deletedAt) return false;
+        const deletedDate = ov.deletedAt.toDate ? ov.deletedAt.toDate() : new Date(ov.deletedAt);
+        return deletedDate >= limitDate;
+      });
+
+      recentDeleted.sort((a, b) => {
+        const dateA = a.deletedAt?.toDate ? a.deletedAt.toDate() : new Date(a.deletedAt);
+        const dateB = b.deletedAt?.toDate ? b.deletedAt.toDate() : new Date(b.deletedAt);
+        return dateB - dateA; // Descending
+      });
+
+      setPapelera(recentDeleted);
+    } catch (error) {
+      console.error('Error cargando papelera:', error);
+    } finally {
+      setLoadingPapelera(false);
     }
   }
 
@@ -462,8 +501,8 @@ export default function Ovejas() {
       numeroCaravana: oveja.numeroCaravana || '',
       fechaNacimiento: oveja.fechaNacimiento
         ? (oveja.fechaNacimiento.toDate
-            ? oveja.fechaNacimiento.toDate().toISOString().split('T')[0]
-            : new Date(oveja.fechaNacimiento).toISOString().split('T')[0])
+          ? oveja.fechaNacimiento.toDate().toISOString().split('T')[0]
+          : new Date(oveja.fechaNacimiento).toISOString().split('T')[0])
         : '',
       peso: oveja.peso?.[oveja.peso.length - 1]?.valor?.toString() || '',
       sexo: oveja.sexo || 'hembra',
@@ -474,16 +513,53 @@ export default function Ovejas() {
     setShowModal(true);
   }
 
+  async function handleRestore(oveja) {
+    if (!window.confirm(`¿Restaurar la oveja #${oveja.numeroCaravana}?`)) return;
+    try {
+      await updateDoc(doc(db, 'ovejas', oveja.id), {
+        activa: true,
+        deletedAt: null,
+        updatedAt: new Date(),
+      });
+      loadOvejas(selectedCampoId);
+      loadPapelera(selectedCampoId);
+    } catch (error) {
+      console.error('Error restaurando oveja:', error);
+      alert('No se pudo restaurar la oveja');
+    }
+  }
+
+  async function handlePermanentDelete(oveja) {
+    if (
+      !window.confirm(
+        `¿Eliminar PERMANENTEMENTE la oveja #${oveja.numeroCaravana}? No se podrá recuperar.`
+      )
+    )
+      return;
+    try {
+      await deleteDoc(doc(db, 'ovejas', oveja.id));
+      loadPapelera(selectedCampoId);
+    } catch (error) {
+      console.error('Error eliminando permanentemente:', error);
+      alert('No se pudo eliminar la oveja permanentemente');
+    }
+  }
+
   async function handleDelete(oveja, e) {
     e?.stopPropagation();
     if (!window.confirm(`¿Eliminar la oveja #${oveja.numeroCaravana}?`)) return;
     try {
-      await updateDoc(doc(db, 'ovejas', oveja.id), { activa: false, updatedAt: new Date() });
+      await updateDoc(doc(db, 'ovejas', oveja.id), {
+        activa: false,
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      });
       if (selectedOvejaId === oveja.id) {
         setSelectedOvejaId(null);
         setShowDetalleModal(false);
       }
       loadOvejas(selectedCampoId);
+      loadPapelera(selectedCampoId);
     } catch (error) {
       console.error('Error eliminando oveja:', error);
       alert('No se pudo eliminar la oveja');
@@ -508,10 +584,10 @@ export default function Ovejas() {
     : historial;
   const pesoHistorial = selectedOveja?.peso
     ? [...selectedOveja.peso].sort((a, b) => {
-        const fechaA = a.fecha?.toDate ? a.fecha.toDate() : new Date(a.fecha);
-        const fechaB = b.fecha?.toDate ? b.fecha.toDate() : new Date(b.fecha);
-        return fechaB - fechaA;
-      })
+      const fechaA = a.fecha?.toDate ? a.fecha.toDate() : new Date(a.fecha);
+      const fechaB = b.fecha?.toDate ? b.fecha.toDate() : new Date(b.fecha);
+      return fechaB - fechaA;
+    })
     : [];
   const ovejasOrdenadas = ovejas;
 
@@ -614,6 +690,12 @@ export default function Ovejas() {
         >
           Árbol genealógico
         </button>
+        <button
+          className={`tab-btn ${vista === 'papelera' ? 'active' : ''}`}
+          onClick={() => setVista('papelera')}
+        >
+          Papelera ({papelera.length})
+        </button>
       </div>
 
       <datalist id="caravanas-options">
@@ -626,6 +708,71 @@ export default function Ovejas() {
 
       {vista === 'genealogia' ? (
         <GenealogiaView ovejas={ovejasOrdenadas} />
+      ) : vista === 'papelera' ? (
+        <>
+          {papelera.length === 0 ? (
+            <div className="card">
+              <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px' }}>
+                La papelera está vacía.
+              </p>
+            </div>
+          ) : (
+            <div className="card table-scroll">
+              <div
+                style={{
+                  padding: '16px',
+                  background: '#fff3cd',
+                  marginBottom: '16px',
+                  borderRadius: '8px',
+                  color: '#856404',
+                  fontSize: '14px',
+                }}
+              >
+                Las ovejas eliminadas permanecerán en la papelera por 10 días antes de ser ocultadas permanentemente.
+              </div>
+              <table className="table ovejas-table">
+                <thead>
+                  <tr>
+                    <th>Caravana</th>
+                    <th>Raza</th>
+                    <th>Eliminado el</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {papelera.map((ov) => (
+                    <tr key={ov.id}>
+                      <td>
+                        <strong>{ov.numeroCaravana}</strong>
+                      </td>
+                      <td>{ov.raza || 'N/A'}</td>
+                      <td>{formatFechaLarga(ov.deletedAt)}</td>
+                      <td>
+                        <div className="table-actions">
+                          <button
+                            className="icon-btn"
+                            title="Restaurar"
+                            onClick={() => handleRestore(ov)}
+                            style={{ color: 'var(--primary)' }}
+                          >
+                            <RotateCcw size={18} />
+                          </button>
+                          <button
+                            className="icon-btn icon-btn-danger"
+                            title="Eliminar permanentemente"
+                            onClick={() => handlePermanentDelete(ov)}
+                          >
+                            <Ban size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       ) : (
         <>
           {ovejas.length === 0 ? (
@@ -723,6 +870,13 @@ export default function Ovejas() {
                   onClick={(e) => handleEdit(selectedOveja, e)}
                 >
                   <Edit2 size={18} />
+                </button>
+                <button
+                  className="icon-btn icon-btn-danger"
+                  title="Eliminar"
+                  onClick={(e) => handleDelete(selectedOveja, e)}
+                >
+                  <Trash2 size={18} />
                 </button>
                 <button
                   className="icon-btn"
