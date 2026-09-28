@@ -1,0 +1,23 @@
+{
+  "name": "campo-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch --env-file-if-exists=.env src/index.js",
+    "test": "vitest run",
+    "import": "node --env-file-if-exists=.env scripts/import-firestore.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "resend": "^6.30.0"
+  },
+  "devDependencies": {
+    "supertest": "^7.3.0",
+    "vitest": "^4.1.11"
+  }
+}
