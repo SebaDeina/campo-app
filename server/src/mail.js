@@ -4,12 +4,20 @@ function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-function layout(title, subtitle, body) {
+function layout(publicUrl, title, subtitle, body) {
   return `
     <div style="font-family: 'Helvetica Neue', Arial, sans-serif; background:#f6f7fb; padding:40px 0;">
       <table cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 20px 40px rgba(17, 37, 62, 0.1);">
         <tr>
-          <td style="background:linear-gradient(135deg,#2e7d32 0%,#4caf50 100%);padding:32px 40px;color:#fff;">
+          <td style="padding:20px 40px;background:#ffffff;">
+            <table cellpadding="0" cellspacing="0"><tr>
+              <td style="vertical-align:middle;"><img src="${publicUrl}/email-logo.png" width="40" height="40" alt="Nimbo" style="display:block;border:0;"></td>
+              <td style="vertical-align:middle;padding-left:10px;font-size:22px;font-weight:700;color:#2e7d32;">Nimbo</td>
+            </tr></table>
+          </td>
+        </tr>
+        <tr>
+          <td bgcolor="#2e7d32" style="background-color:#2e7d32;background-image:linear-gradient(135deg,#2e7d32 0%,#4caf50 100%);padding:32px 40px;color:#fff;">
             <h1 style="margin:0;font-size:28px;">${title}</h1>
             <p style="margin:8px 0 0;font-size:16px;opacity:.9;">${subtitle}</p>
           </td>
@@ -59,7 +67,7 @@ export function createMailer(config) {
         </div>
         <p style="margin:0 0 24px;color:#51606a;">Estamos construyendo Nimbo junto a productores como vos. Cualquier sugerencia es bienvenida.</p>
         ${button(`${config.publicUrl}/login`, 'Entrar a mi cuenta')}`;
-      await send(email, '¡Bienvenido a Nimbo!', layout('¡Bienvenido a Nimbo!', 'Tu panel inteligente para gestionar el campo.', body));
+      await send(email, '¡Bienvenido a Nimbo!', layout(config.publicUrl, '¡Bienvenido a Nimbo!', 'Tu panel inteligente para gestionar el campo.', body));
     },
 
     async sendPasswordReset(email, link) {
@@ -69,7 +77,7 @@ export function createMailer(config) {
         </p>
         <p style="margin:0 0 24px;">${button(link, 'Elegir nueva contraseña')}</p>
         <p style="margin:0;color:#51606a;font-size:14px;">Si no lo pediste, ignorá este mail: tu contraseña no cambia.</p>`;
-      await send(email, 'Cambiá tu contraseña de Nimbo', layout('Recuperar contraseña', 'Nimbo · Gestión Agro Inteligente', body));
+      await send(email, 'Cambiá tu contraseña de Nimbo', layout(config.publicUrl, 'Recuperar contraseña', 'Nimbo · Gestión Agro Inteligente', body));
     },
   };
 }
