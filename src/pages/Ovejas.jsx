@@ -13,6 +13,7 @@ import {
 import { db } from '../firebase/config';
 import { Plus, Edit2, Trash2, X, Clock, RotateCcw, Ban } from 'lucide-react';
 import { useCampo } from '../firebase/CampoContext';
+import './Ovejas.css';
 
 function dateFromInput(value) {
   if (!value) return new Date();
@@ -54,12 +55,29 @@ function renderGeneNode(oveja, etiqueta, principal = false) {
 
 function GenealogiaView({ ovejas }) {
   const [filtro, setFiltro] = useState('');
+  const [selectedOvejaId, setSelectedOvejaId] = useState('');
+
+  // Filtrar ovejas
   const visibles = filtro
     ? ovejas.filter((ov) =>
       String(ov.numeroCaravana).toLowerCase().includes(filtro.toLowerCase())
     )
     : ovejas;
-  const bloques = visibles.length ? visibles : ovejas;
+
+  // Filtrar solo ovejas con historial genealógico
+  const ovejasConHistorial = visibles.filter(ov => ov.madre || ov.padre);
+
+  // Auto-seleccionar la primera oveja con historial
+  useEffect(() => {
+    if (!selectedOvejaId && ovejasConHistorial.length > 0) {
+      setSelectedOvejaId(ovejasConHistorial[0].id);
+    }
+  }, [ovejasConHistorial.length]);
+
+  // Seleccionar oveja para mostrar árbol
+  const ovejaSeleccionada = selectedOvejaId
+    ? ovejas.find(ov => ov.id === selectedOvejaId)
+    : ovejasConHistorial[0];
 
   if (!ovejas.length) {
     return (
@@ -71,60 +89,132 @@ function GenealogiaView({ ovejas }) {
     );
   }
 
+  // Función para renderizar un nodo del árbol
+  const renderNode = (oveja, relacion) => {
+    if (!oveja) {
+      return (
+        <div className="tree-node-empty">
+          <span>Sin registro</span>
+        </div>
+      );
+    }
+
+    const isFemale = oveja.sexo === 'hembra';
+    const nodeColor = isFemale ? '#e91e63' : '#2196f3';
+
+    return (
+      <div className="tree-node-card">
+        {relacion && (
+          <div className="tree-node-relation" style={{ backgroundColor: nodeColor }}>
+            {relacion}
+          </div>
+        )}
+        <div className="tree-node-circle" style={{ backgroundColor: nodeColor }}>
+          <span>#{oveja.numeroCaravana}</span>
+        </div>
+        <div className="tree-node-info">
+          <div className="tree-node-raza">{oveja.raza || 'Sin raza'}</div>
+        </div>
+      </div>
+    );
+  };
+
+  // Obtener familiares
+  const madre = ovejaSeleccionada ? findOvejaPorCaravana(ovejas, ovejaSeleccionada.madre) : null;
+  const padre = ovejaSeleccionada ? findOvejaPorCaravana(ovejas, ovejaSeleccionada.padre) : null;
+  const abuelaMaterna = madre ? findOvejaPorCaravana(ovejas, madre.madre) : null;
+  const abueloMaterno = madre ? findOvejaPorCaravana(ovejas, madre.padre) : null;
+  const abuelaPaterna = padre ? findOvejaPorCaravana(ovejas, padre.madre) : null;
+  const abueloPaterno = padre ? findOvejaPorCaravana(ovejas, padre.padre) : null;
+
   return (
     <div className="card genealogia-card">
       <div className="gene-toolbar">
         <div>
           <h3 style={{ margin: 0 }}>Árbol genealógico</h3>
           <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)' }}>
-            Filtra por caravana y recorre horizontalmente para ver todas las ramas.
+            Selecciona una oveja para ver su árbol genealógico
           </p>
         </div>
-        <input
-          type="text"
-          placeholder="Buscar caravana..."
-          value={filtro}
-          onChange={(e) => setFiltro(e.target.value)}
-          style={{
-            minWidth: '200px',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid var(--border)',
-          }}
-        />
-      </div>
-
-      <div className="gene-canvas">
-        <div className="gene-tree">
-          {bloques.map((ov) => {
-            const madre = findOvejaPorCaravana(ovejas, ov.madre);
-            const padre = findOvejaPorCaravana(ovejas, ov.padre);
-            const abuelaMaterna = madre ? findOvejaPorCaravana(ovejas, madre.madre) : null;
-            const abueloMaterno = madre ? findOvejaPorCaravana(ovejas, madre.padre) : null;
-            const abuelaPaterna = padre ? findOvejaPorCaravana(ovejas, padre.madre) : null;
-            const abueloPaterno = padre ? findOvejaPorCaravana(ovejas, padre.padre) : null;
-
-            return (
-              <div key={`gene-${ov.id}`} className="gene-block">
-                <div className="gene-level">
-                  {renderGeneNode(abuelaMaterna, 'Abuela materna')}
-                  {renderGeneNode(abueloMaterno, 'Abuelo materno')}
-                  {renderGeneNode(abuelaPaterna, 'Abuela paterna')}
-                  {renderGeneNode(abueloPaterno, 'Abuelo paterno')}
-                </div>
-                <div className="gene-level gene-parents">
-                  {renderGeneNode(madre, 'Madre')}
-                  <div className="gene-line" />
-                  {renderGeneNode(padre, 'Padre')}
-                </div>
-                <div className="gene-child-wrapper">
-                  {renderGeneNode(ov, 'Oveja', true)}
-                </div>
-              </div>
-            );
-          })}
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            placeholder="Buscar caravana..."
+            value={filtro}
+            onChange={(e) => setFiltro(e.target.value)}
+            style={{
+              minWidth: '150px',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid var(--border)',
+            }}
+          />
+          <select
+            value={selectedOvejaId}
+            onChange={(e) => setSelectedOvejaId(e.target.value)}
+            style={{
+              minWidth: '150px',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <option value="">Seleccionar oveja...</option>
+            {ovejasConHistorial.length === 0 ? (
+              <option disabled>No hay ovejas con historial genealógico</option>
+            ) : (
+              ovejasConHistorial.map(ov => (
+                <option key={ov.id} value={ov.id}>
+                  #{ov.numeroCaravana} - {ov.raza || 'Sin raza'}
+                </option>
+              ))
+            )}
+          </select>
         </div>
       </div>
+
+      {ovejaSeleccionada ? (
+        <div className="custom-tree-container">
+          {/* Oveja seleccionada */}
+          <div className="tree-level tree-level-main">
+            {renderNode(ovejaSeleccionada, '')}
+          </div>
+
+          {/* Padres */}
+          {(madre || padre) && (
+            <div className="tree-level tree-level-parents">
+              {renderNode(madre, 'Madre')}
+              {renderNode(padre, 'Padre')}
+            </div>
+          )}
+
+          {/* Abuelos */}
+          {(abuelaMaterna || abueloMaterno || abuelaPaterna || abueloPaterno) && (
+            <div className="tree-level tree-level-grandparents">
+              {renderNode(abuelaMaterna, 'Abuela Materna')}
+              {renderNode(abueloMaterno, 'Abuelo Materno')}
+              {renderNode(abuelaPaterna, 'Abuela Paterna')}
+              {renderNode(abueloPaterno, 'Abuelo Paterno')}
+            </div>
+          )}
+
+          {/* Leyenda */}
+          <div className="tree-legend">
+            <div className="legend-item">
+              <div className="legend-color" style={{ backgroundColor: '#e91e63' }}></div>
+              <span>Hembra</span>
+            </div>
+            <div className="legend-item">
+              <div className="legend-color" style={{ backgroundColor: '#2196f3' }}></div>
+              <span>Macho</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          Selecciona una oveja con historial genealógico para ver su árbol familiar
+        </div>
+      )}
     </div>
   );
 }

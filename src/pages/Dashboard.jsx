@@ -1,15 +1,11 @@
 import { useState, useEffect } from 'react';
 import { collection, query, getDocs, where } from '../lib/db';
 import { db } from '../firebase/config';
-import { Droplets, PawPrint, AlertCircle, Calendar } from 'lucide-react';
+import { Droplets, PawPrint, AlertCircle, Calendar, CheckCircle2, Clock } from 'lucide-react';
 import { useCampo } from '../firebase/CampoContext';
-import { format } from 'date-fns';
+import { format, differenceInDays, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
-const SECTION_OPTIONS = [
-  { key: 'stats', label: 'Estadísticas' },
-  { key: 'tareas', label: 'Tareas del día' },
-];
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -17,15 +13,13 @@ export default function Dashboard() {
     ovejasGestantes: 0,
     produccionLeche: 0,
     lluviasMes: 0,
-    tareasHoy: 0
+    tareasHoy: 0,
+    tareasPendientes: 0
   });
   const [loading, setLoading] = useState(true);
   const { selectedCampoId, loadingCampos } = useCampo();
-  const [tareasResumen, setTareasResumen] = useState([]);
-  const [visibleSections, setVisibleSections] = useState({
-    stats: true,
-    tareas: true
-  });
+  const [tareasProximas, setTareasProximas] = useState([]);
+  const [alerts, setAlerts] = useState([]);
 
   useEffect(() => {
     if (!selectedCampoId) {
@@ -37,6 +31,9 @@ export default function Dashboard() {
 
   async function loadStats(campoId) {
     try {
+      const today = new Date();
+      const todayStart = startOfDay(today);
+
       // Total de ovejas activas
       const ovejasQuery = query(
         collection(db, 'ovejas'),
@@ -45,8 +42,8 @@ export default function Dashboard() {
       );
       const ovejasSnapshot = await getDocs(ovejasQuery);
       const totalOvejas = ovejasSnapshot.size;
-      
-      // Ovejas gestantes
+
+      // Ovejas gestantes y alertas de parto
       const gestantesQuery = query(
         collection(db, 'ovejas'),
         where('campoId', '==', campoId),
@@ -56,11 +53,27 @@ export default function Dashboard() {
       const gestantesSnapshot = await getDocs(gestantesQuery);
       const ovejasGestantes = gestantesSnapshot.size;
 
+      // Calcular alertas de ovejas próximas a parir (< 30 días)
+      const newAlerts = [];
+      gestantesSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.reproductivo?.fechaParto) {
+          const fechaParto = data.reproductivo.fechaParto.toDate();
+          const diasRestantes = differenceInDays(fechaParto, today);
+          if (diasRestantes > 0 && diasRestantes <= 30) {
+            newAlerts.push({
+              type: 'warning',
+              message: `${data.caravana || 'Oveja sin caravana'} próxima a parir en ${diasRestantes} días`,
+              link: '/app/ovejas'
+            });
+          }
+        }
+      });
+
       // Producción de leche (últimos 7 días)
-      const today = new Date();
       const sevenDaysAgo = new Date(today);
       sevenDaysAgo.setDate(today.getDate() - 7);
-      
+
       let totalLeche = 0;
       ovejasSnapshot.forEach(doc => {
         const data = doc.data();
@@ -80,7 +93,7 @@ export default function Dashboard() {
         where('campoId', '==', campoId)
       );
       const lluviasSnapshot = await getDocs(lluviasQuery);
-      
+
       let lluviasMes = 0;
       lluviasSnapshot.forEach(doc => {
         const data = doc.data();
@@ -89,52 +102,66 @@ export default function Dashboard() {
         }
       });
 
-      // Tareas de hoy
-      const todayStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0));
-      const todayEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 23, 59, 59));
-      
+      // Tareas
       const tareasQuery = query(
         collection(db, 'tareas'),
         where('campoId', '==', campoId),
         where('completada', '==', false)
       );
       const tareasSnapshot = await getDocs(tareasQuery);
-      
+
       let tareasHoy = 0;
+      let tareasPendientes = 0;
       const proximas = [];
+
       tareasSnapshot.forEach(doc => {
         const data = doc.data();
         if (!data.fecha) return;
+
         const fecha = data.fecha.toDate();
-        if (fecha >= todayStart && fecha <= todayEnd) {
+        const fechaStart = startOfDay(fecha);
+
+        tareasPendientes++;
+
+        if (fechaStart.getTime() === todayStart.getTime()) {
           tareasHoy++;
         }
+
+        // Alertas de tareas vencidas
+        if (isBefore(fechaStart, todayStart)) {
+          newAlerts.push({
+            type: 'error',
+            message: `Tarea vencida: ${data.descripcion}`,
+            link: '/app/tareas'
+          });
+        }
+
         proximas.push({
           id: doc.id,
           descripcion: data.descripcion,
           tipo: data.tipo,
           fecha,
+          vencida: isBefore(fechaStart, todayStart)
         });
       });
 
-      proximas.sort((a, b) => a.fecha - b.fecha);
+      // Ordenar tareas: vencidas primero, luego por fecha
+      proximas.sort((a, b) => {
+        if (a.vencida && !b.vencida) return -1;
+        if (!a.vencida && b.vencida) return 1;
+        return a.fecha - b.fecha;
+      });
 
-      const unique = [];
-      const seen = new Set();
-      for (const tarea of proximas) {
-        if (!seen.has(tarea.id)) {
-          unique.push(tarea);
-          seen.add(tarea.id);
-        }
-      }
-      setTareasResumen(unique.slice(0, 3));
+      setTareasProximas(proximas.slice(0, 5));
+      setAlerts(newAlerts);
 
       setStats({
         totalOvejas,
         ovejasGestantes,
         produccionLeche: Math.round(totalLeche * 10) / 10,
         lluviasMes: Math.round(lluviasMes * 10) / 10,
-        tareasHoy
+        tareasHoy,
+        tareasPendientes
       });
     } catch (error) {
       console.error('Error cargando estadísticas:', error);
@@ -166,107 +193,141 @@ export default function Dashboard() {
 
   return (
     <div className="container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px', flexWrap: 'wrap', marginBottom: '20px' }}>
-        <h1>Dashboard</h1>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          {SECTION_OPTIONS.map((option) => (
-            <label key={option.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
-              <input
-                type="checkbox"
-                checked={visibleSections[option.key]}
-                onChange={(e) =>
-                  setVisibleSections((prev) => ({ ...prev, [option.key]: e.target.checked }))
-                }
-              />
-              {option.label}
-            </label>
+      <div style={{ marginBottom: '25px' }}>
+        <h1 style={{ marginBottom: '5px' }}>Dashboard</h1>
+        <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+          Resumen ejecutivo de tu campo
+        </p>
+      </div>
+
+      {/* Alertas */}
+      {alerts.length > 0 && (
+        <div style={{ marginBottom: '25px' }}>
+          {alerts.map((alert, index) => (
+            <Link
+              key={index}
+              to={alert.link}
+              style={{ textDecoration: 'none' }}
+            >
+              <div
+                className="alert"
+                style={{
+                  background: alert.type === 'error' ? '#fee' : '#fff3cd',
+                  border: `1px solid ${alert.type === 'error' ? '#fcc' : '#ffe69c'}`,
+                  color: alert.type === 'error' ? '#c00' : '#856404',
+                  marginBottom: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  cursor: 'pointer'
+                }}
+              >
+                <AlertCircle size={20} />
+                <span>{alert.message}</span>
+              </div>
+            </Link>
           ))}
+        </div>
+      )}
+
+      {/* Estadísticas principales */}
+      <div className="grid grid-2" style={{ marginBottom: '25px' }}>
+        <div className="stat-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <PawPrint size={32} />
+            <div>
+              <div className="stat-label">Total de Ovejas</div>
+              <div className="stat-value">{stats.totalOvejas}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <AlertCircle size={32} />
+            <div>
+              <div className="stat-label">Ovejas Gestantes</div>
+              <div className="stat-value">{stats.ovejasGestantes}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Droplets size={32} />
+            <div>
+              <div className="stat-label">Lluvias del Mes</div>
+              <div className="stat-value">{stats.lluviasMes}mm</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Calendar size={32} />
+            <div>
+              <div className="stat-label">Tareas Pendientes</div>
+              <div className="stat-value">{stats.tareasPendientes}</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>{stats.tareasHoy} para hoy</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {visibleSections.stats && (
-        <div className="grid grid-2">
-          <div className="stat-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <PawPrint size={32} />
-              <div>
-                <div className="stat-label">Total de Ovejas</div>
-                <div className="stat-value">{stats.totalOvejas}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="stat-card" style={{ background: 'linear-gradient(135deg, #7b1fa2 0%, #9c27b0 100%)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <AlertCircle size={32} />
-              <div>
-                <div className="stat-label">Ovejas Gestantes</div>
-                <div className="stat-value">{stats.ovejasGestantes}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="stat-card" style={{ background: 'linear-gradient(135deg, #0288d1 0%, #03a9f4 100%)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Droplets size={32} />
-              <div>
-                <div className="stat-label">Producción de Leche (7 días)</div>
-                <div className="stat-value">{stats.produccionLeche}L</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="stat-card" style={{ background: 'linear-gradient(135deg, #00796b 0%, #009688 100%)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Droplets size={32} />
-              <div>
-                <div className="stat-label">Lluvias del Mes</div>
-                <div className="stat-value">{stats.lluviasMes}mm</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {visibleSections.chart && (
-        <div className="card" style={{ marginTop: '20px' }}>
-          <h2 style={{ marginBottom: '10px' }}>Resumen de lluvias</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            Este mes se registraron <strong>{stats.lluviasMes} mm</strong> de lluvia.
-          </p>
-          <Link to="/app/lluvias" className="btn btn-secondary" style={{ marginTop: '10px', width: 'fit-content' }}>
-            Ver historial y gráficos
+      {/* Tareas próximas */}
+      <div className="card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CheckCircle2 size={20} color="var(--primary)" />
+            Tareas próximas
+          </h3>
+          <Link to="/app/tareas" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '14px' }}>
+            Ver todas
           </Link>
         </div>
-      )}
 
-      {visibleSections.tareas && (
-        <div className="card" style={{ marginTop: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-            <Calendar size={24} color="var(--primary)" />
-            <h2>Resumen rápido de tareas</h2>
-          </div>
-          {tareasResumen.length === 0 ? (
-            <p style={{ color: 'var(--text-secondary)' }}>No tienes tareas pendientes para los próximos días.</p>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {tareasResumen.map((tarea) => (
-                <li key={tarea.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
-                  <div>
-                    <strong>{tarea.descripcion}</strong>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      {format(tarea.fecha, "dd 'de' MMMM", { locale: es })}
-                    </div>
+        {tareasProximas.length === 0 ? (
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+            ¡Excelente! No tienes tareas pendientes.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {tareasProximas.map((tarea) => (
+              <div
+                key={tarea.id}
+                className="card"
+                style={{
+                  background: tarea.vencida ? '#fee' : 'var(--background)',
+                  border: tarea.vencida ? '1px solid #fcc' : '1px solid var(--border)',
+                  padding: '12px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '10px',
+                  flexWrap: 'wrap'
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    {tarea.vencida ? (
+                      <AlertCircle size={16} color="#c00" />
+                    ) : (
+                      <Clock size={16} color="var(--primary)" />
+                    )}
+                    <strong style={{ color: tarea.vencida ? '#c00' : 'inherit' }}>
+                      {tarea.descripcion}
+                    </strong>
                   </div>
-                  <Link to="/app/tareas" className="btn btn-secondary" style={{ padding: '6px 12px' }}>
-                    Ver detalle
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', paddingLeft: '24px' }}>
+                    {format(tarea.fecha, "dd 'de' MMMM, yyyy", { locale: es })}
+                    {tarea.vencida && <span style={{ color: '#c00', marginLeft: '8px' }}>• Vencida</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

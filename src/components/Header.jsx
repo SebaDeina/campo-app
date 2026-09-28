@@ -35,27 +35,15 @@ export default function Header() {
       onClick: () => navigate('/app/tareas')
     },
     {
-      key: 'ovejas',
-      label: 'Gestionar ovejas',
-      icon: ListChecks,
-      onClick: () => navigate('/app/ovejas')
-    },
-    {
       key: 'clima',
       label: 'Ver clima',
       icon: CloudSun,
       onClick: () => navigate('/app/clima')
-    },
-    {
-      key: 'equipo',
-      label: 'Invitar miembro',
-      icon: UserPlus,
-      onClick: () => navigate('/app/configuracion#equipo')
     }
   ];
   let campos = [];
   let selectedCampoId = null;
-  let selectCampo = () => {};
+  let selectCampo = () => { };
   let loadingCampos = false;
 
   if (typeof useCampo === 'function') {
@@ -63,7 +51,7 @@ export default function Header() {
     if (campoContext) {
       campos = campoContext.campos || [];
       selectedCampoId = campoContext.selectedCampoId || null;
-      selectCampo = campoContext.selectCampo || (() => {});
+      selectCampo = campoContext.selectCampo || (() => { });
       loadingCampos = campoContext.loadingCampos || false;
     }
   }
@@ -260,7 +248,7 @@ export default function Header() {
         {mobileMenuOpen && (
           <div className="mt-3 flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3 md:hidden">
             {renderCampoBadge('mobile')}
-            
+
             <div className="flex flex-col gap-2">{NAV_LINKS.map((item) => renderLink(item, 'mobile'))}</div>
 
             {currentUser && (
@@ -278,7 +266,7 @@ export default function Header() {
                       <Settings size={16} /> Perfil y configuración
                     </span>
                   </button>
-                  
+
                   <button
                     className="rounded-md bg-red-50 px-3 py-2 text-left font-medium text-red-600 hover:bg-red-100"
                     onClick={handleLogout}
