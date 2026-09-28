@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, query, getDocs, where } from '../lib/db';
+import { calcularStock, stockBajo } from '../lib/alimento';
 import { db } from '../firebase/config';
 import { Droplets, PawPrint, AlertCircle, Calendar, CheckCircle2, Clock } from 'lucide-react';
 import { useCampo } from '../firebase/CampoContext';
@@ -147,6 +148,25 @@ export default function Dashboard() {
       });
 
       setTareasProximas(proximas.slice(0, 5));
+      // Stock de alimento bajo el mínimo
+      const [alimentosSnap, movsSnap] = await Promise.all([
+        getDocs(query(collection(db, 'alimentos'), where('campoId', '==', campoId))),
+        getDocs(query(collection(db, 'alimentoMovimientos'), where('campoId', '==', campoId))),
+      ]);
+      const movsAlimento = movsSnap.docs.map((d) => d.data());
+      alimentosSnap.forEach((d) => {
+        const alimento = d.data();
+        if (alimento.activo === false) return;
+        const stock = calcularStock(movsAlimento.filter((m) => m.alimentoId === d.id));
+        if (stockBajo(stock, alimento.stockMinimo)) {
+          newAlerts.push({
+            type: 'warning',
+            message: `Stock bajo: ${alimento.nombre} — quedan ${stock.toLocaleString('es-AR')} ${alimento.unidad} (mínimo ${alimento.stockMinimo})`,
+            link: '/app/alimento'
+          });
+        }
+      });
+
       setAlerts(newAlerts);
 
       setStats({

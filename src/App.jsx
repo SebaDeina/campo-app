@@ -10,6 +10,7 @@ import Ovejas from './pages/Ovejas';
 import Clima from './pages/Clima';
 import Lluvias from './pages/Lluvias';
 import Tareas from './pages/Tareas';
+import Alimento from './pages/Alimento';
 import Configuracion from './pages/Configuracion';
 import PendingApproval from './pages/PendingApproval';
 import ResetPassword from './pages/ResetPassword';
@@ -121,6 +122,7 @@ function App() {
               <Route path="clima" element={<Clima />} />
               <Route path="lluvias" element={<Lluvias />} />
               <Route path="tareas" element={<Tareas />} />
+              <Route path="alimento" element={<Alimento />} />
               <Route path="configuracion" element={<Configuracion />} />
             </Route>
             <Route path="*" element={<Navigate to="/" />} />

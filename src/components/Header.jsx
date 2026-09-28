@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../firebase/AuthContext';
 import { useCampo } from '../firebase/CampoContext';
-import { LogOut, Settings, Map, Menu, X, Droplets, CalendarCheck, CloudSun, UserPlus, ListChecks, ClipboardEdit, PawPrint } from 'lucide-react';
+import { LogOut, Settings, Map, Menu, X, Droplets, CalendarCheck, CloudSun, UserPlus, ListChecks, ClipboardEdit, PawPrint, Wheat } from 'lucide-react';
 import logo from '../img/icons8-grass-50.png';
 
 const NAV_LINKS = [
@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { to: '/app/clima', label: 'Clima' },
   { to: '/app/lluvias', label: 'Lluvias' },
   { to: '/app/tareas', label: 'Tareas' },
+  { to: '/app/alimento', label: 'Alimento' },
 ];
 
 export default function Header() {
@@ -39,6 +40,12 @@ export default function Header() {
       label: 'Nueva oveja',
       icon: PawPrint,
       onClick: () => navigate('/app/ovejas?nuevo=oveja')
+    },
+    {
+      key: 'alimento',
+      label: 'Registrar alimento',
+      icon: Wheat,
+      onClick: () => navigate('/app/alimento?nuevo=consumo')
     },
     {
       key: 'tareas',

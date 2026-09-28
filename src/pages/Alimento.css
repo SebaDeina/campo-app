@@ -1,0 +1,238 @@
+.alimento-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.alimento-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.alimento-header-actions .btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alimento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.alimento-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+.alimento-card-bajo {
+  border: 1px solid #ef9a9a;
+  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.08);
+}
+
+.alimento-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.alimento-nombre {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.alimento-card-tools {
+  display: flex;
+  gap: 6px;
+}
+
+.alimento-card-tools .icon-btn {
+  width: 30px;
+  height: 30px;
+}
+
+.alimento-stock {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.alimento-stock-valor {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.alimento-card-bajo .alimento-stock-valor {
+  color: #c62828;
+}
+
+.alimento-stock-unidad {
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.alimento-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.alimento-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.alimento-card-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.alimento-btn-ingreso {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.alimento-btn-consumo {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffcc80;
+}
+
+.alimento-btn-ajuste {
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+}
+
+.badge-stock-bajo {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.badge-mov-ingreso {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.badge-mov-consumo {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.badge-mov-ajuste {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.alimento-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.alimento-filtro {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.alimento-filtro select {
+  max-width: 260px;
+}
+
+.alimento-vacio {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--primary);
+}
+
+.alimento-vacio p {
+  color: var(--text-primary, #172b4d);
+}
+
+.alimento-archivado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.alimento-archivado:last-child {
+  border-bottom: none;
+}
+
+.alimento-archivado .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.alimento-total td {
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+}
+
+.alimento-tipo-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.alimento-tipo {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.alimento-tipo-ingreso.active {
+  background: #e8f5e9;
+  border-color: #66bb6a;
+  color: #2e7d32;
+}
+
+.alimento-tipo-consumo.active {
+  background: #fff3e0;
+  border-color: #ffa726;
+  color: #e65100;
+}
+
+.alimento-tipo-ajuste.active {
+  background: #e3f2fd;
+  border-color: #42a5f5;
+  color: #1565c0;
+}
+
+/* .badge base (definida en Ovejas.css) — repetida por si esta página carga primero */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
