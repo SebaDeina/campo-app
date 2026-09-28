@@ -105,6 +105,24 @@ describe('escrituras', () => {
   });
 });
 
+describe('stock de alimento', () => {
+  it('alimentos y movimientos respetan los permisos por campo', async () => {
+    const { ana, vero, beto } = await setup();
+    const alimento = await ana.post('/api/db/alimentos').set(H).send({
+      data: { campoId: 'c1', nombre: 'Alfalfa', unidad: 'fardos', stockMinimo: 10, activo: true },
+    }).expect(201);
+    await ana.post('/api/db/alimentoMovimientos').set(H).send({
+      data: { campoId: 'c1', alimentoId: alimento.body.id, tipo: 'ingreso', cantidad: 50, precioTotal: 250000 },
+    }).expect(201);
+    const movs = await vero.post('/api/db/query').set(H).send({
+      collection: 'alimentoMovimientos', where: [['campoId', '==', 'c1']],
+    }).expect(200);
+    expect(movs.body).toHaveLength(1);
+    await vero.post('/api/db/alimentoMovimientos').set(H).send({ data: { campoId: 'c1', tipo: 'consumo', cantidad: 1 } }).expect(403);
+    await beto.post('/api/db/query').set(H).send({ collection: 'alimentos', where: [['campoId', '==', 'c1']] }).expect(403);
+  });
+});
+
 describe('runQuery / applyUpdate', () => {
   it('soporta in, array-contains, !=, límites y orden compuesto', () => {
     const docs = [

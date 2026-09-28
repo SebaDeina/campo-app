@@ -7,7 +7,10 @@ import { deleteDoc, getDoc, listDocs, putDoc } from '../store.js';
 import { newDocId } from '../ids.js';
 import { tx } from '../db.js';
 
-export const CAMPO_COLLECTIONS = new Set(['ovejas', 'ovejaHistorial', 'lluvias', 'tareas']);
+export const CAMPO_COLLECTIONS = new Set([
+  'ovejas', 'ovejaHistorial', 'lluvias', 'tareas',
+  'alimentos', 'alimentoMovimientos',
+]);
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 function checkCollection(collection) {
