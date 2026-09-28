@@ -100,6 +100,16 @@ describe('signup y aprobación', () => {
   });
 });
 
+describe('perfil', () => {
+  it('actualiza nombre y foto', async () => {
+    const { app, db } = makeApp();
+    const agent = await loginAs(app, db, 'u1');
+    const res = await agent.patch('/api/auth/me').set(H).send({ displayName: ' Ana ', photoURL: 'https://img.test/a.png' }).expect(200);
+    expect(res.body).toMatchObject({ displayName: 'Ana', photoURL: 'https://img.test/a.png' });
+    await agent.patch('/api/auth/me').set(H).send({ photoURL: 'javascript:alert(1)' }).expect(400);
+  });
+});
+
 describe('Google OAuth', () => {
   function googleFetch(info) {
     return async (url) => {

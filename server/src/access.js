@@ -40,12 +40,21 @@ export function userStatus(db, config, account) {
   return { profile, isAdmin: admin, isApproved: approved };
 }
 
+function firebasePhoto(account) {
+  try {
+    return account.firebase_raw ? JSON.parse(account.firebase_raw).photoUrl || null : null;
+  } catch {
+    return null;
+  }
+}
+
 export function publicUser(db, config, account) {
   const { profile, isAdmin: admin, isApproved } = userStatus(db, config, account);
   return {
     uid: account.uid,
     email: account.email,
     displayName: account.display_name || profile?.displayName || '',
+    photoURL: profile?.photoURL ?? firebasePhoto(account),
     isApproved,
     isAdmin: admin,
     hasPassword: Boolean(account.password_hash),

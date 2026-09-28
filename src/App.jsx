@@ -12,6 +12,7 @@ import Lluvias from './pages/Lluvias';
 import Tareas from './pages/Tareas';
 import Configuracion from './pages/Configuracion';
 import PendingApproval from './pages/PendingApproval';
+import ResetPassword from './pages/ResetPassword';
 import './styles/App.css';
 
 function PrivateRoute({ children }) {
@@ -101,6 +102,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pending-approval" element={
               <div style={{ minHeight: '100vh', background: 'var(--background)' }}>
                 <PendingApproval />

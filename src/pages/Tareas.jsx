@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc, where } from '../lib/db';
 import { db } from '../firebase/config';
 import { Plus, Trash2, X, CheckCircle, Circle, Calendar } from 'lucide-react';
 import { format } from 'date-fns';

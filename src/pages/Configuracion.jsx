@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { useAuth } from '../firebase/AuthContext';
-import { auth } from '../firebase/config';
 import LocationSettings from '../components/LocationSettings';
+import AdminUsuarios from '../components/AdminUsuarios';
 import { useCampo } from '../firebase/CampoContext';
 
 export default function Configuracion() {
-  const { currentUser } = useAuth();
+  const { currentUser, updateProfile, resetPassword } = useAuth();
   const routerLocation = useLocation();
   const ubicacionRef = useRef(null);
   const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
@@ -137,7 +136,7 @@ export default function Configuracion() {
     setStatus(null);
 
     try {
-      await updateProfile(currentUser, {
+      await updateProfile({
         displayName: displayName.trim() || null,
         photoURL: photoURL.trim() || null
       });
@@ -154,7 +153,7 @@ export default function Configuracion() {
     setSendingReset(true);
     setStatus(null);
     try {
-      await sendPasswordResetEmail(auth, currentUser.email);
+      await resetPassword(currentUser.email);
       setStatus({ type: 'info', message: 'Te enviamos un correo para restablecer la contraseña.' });
     } catch (error) {
       setStatus({ type: 'error', message: error.message || 'No se pudo enviar el correo.' });
@@ -454,6 +453,8 @@ export default function Configuracion() {
           description="Actualiza las coordenadas que se utilizan en la sección de clima y pronóstico."
         />
       </div>
+
+      {currentUser?.isAdmin && <AdminUsuarios />}
     </div>
   );
 }

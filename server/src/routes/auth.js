@@ -90,11 +90,19 @@ export function authRoutes({ db, config, mailer, fetchImpl = fetch }) {
 
   router.patch('/me', (req, res) => {
     const account = requireAuth(req);
-    const displayName = typeof req.body?.displayName === 'string' ? req.body.displayName.trim() : null;
-    if (displayName === null) throw new HttpError(400, 'Falta displayName');
-    db.prepare('UPDATE auth_accounts SET display_name = ? WHERE uid = ?').run(displayName, account.uid);
-    const profile = getDoc(db, 'users', account.uid);
-    if (profile) putDoc(db, 'users', account.uid, { ...profile, displayName });
+    const changes = {};
+    for (const key of ['displayName', 'photoURL']) {
+      const value = req.body?.[key];
+      if (value === undefined) continue;
+      if (value !== null && typeof value !== 'string') throw new HttpError(400, `${key} inválido`);
+      changes[key] = value?.trim() || null;
+    }
+    if (changes.photoURL && !/^https:\/\//.test(changes.photoURL)) throw new HttpError(400, 'La foto tiene que ser una URL https');
+    if ('displayName' in changes) {
+      db.prepare('UPDATE auth_accounts SET display_name = ? WHERE uid = ?').run(changes.displayName, account.uid);
+    }
+    const profile = getDoc(db, 'users', account.uid) || { email: account.email, isApproved: false, createdAt: nowTimestamp(), role: 'user' };
+    putDoc(db, 'users', account.uid, { ...profile, ...changes, displayName: changes.displayName ?? profile.displayName ?? '' });
     res.json(publicUser(db, config, getAccount(db, account.uid)));
   });
 
