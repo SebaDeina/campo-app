@@ -16,8 +16,8 @@ function dateFromInput(value) {
 export default function Tareas() {
   const [tareas, setTareas] = useState([]);
   const [loading, setLoading] = useState(true);
-  useNuevoParam(() => setShowModal(true));
   const [showModal, setShowModal] = useState(false);
+  useNuevoParam(() => setShowModal(true));
   const [formData, setFormData] = useState({
     tipo: 'revision',
     descripcion: '',

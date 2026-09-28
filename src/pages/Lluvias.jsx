@@ -86,8 +86,8 @@ async function parseXlsx(file) {
 export default function Lluvias() {
   const [lluvias, setLluvias] = useState([]);
   const [loading, setLoading] = useState(true);
-  useNuevoParam(() => setShowModal(true));
   const [showModal, setShowModal] = useState(false);
+  useNuevoParam(() => setShowModal(true));
   const [importing, setImporting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
