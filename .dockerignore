@@ -1,0 +1,13 @@
+.git
+node_modules
+server/node_modules
+dist
+server/data
+*.sqlite
+*.sqlite-*
+.env
+.env.*
+server/.env
+docs
+deploy
+api

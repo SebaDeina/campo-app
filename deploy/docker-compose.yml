@@ -1,0 +1,20 @@
+# Vive en el VPS como /opt/campo/src/deploy/docker-compose.yml (lo copia deploy.sh).
+# Datos en /opt/campo/data (bind mount), secretos en /opt/campo/.env (600).
+name: campo
+
+services:
+  campo:
+    build:
+      context: ..
+    image: campo-app:latest
+    restart: unless-stopped
+    env_file: /opt/campo/.env
+    ports:
+      - "127.0.0.1:3600:3000"
+    volumes:
+      - /opt/campo/data:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

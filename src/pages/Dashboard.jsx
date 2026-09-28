@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, getDocs, where } from 'firebase/firestore';
+import { collection, query, getDocs, where } from '../lib/db';
 import { db } from '../firebase/config';
 import { Droplets, PawPrint, AlertCircle, Calendar } from 'lucide-react';
 import { useCampo } from '../firebase/CampoContext';

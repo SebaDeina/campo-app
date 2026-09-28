@@ -18,6 +18,13 @@ export default function Login() {
   const { login, signup, resetPassword, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
+  // El servidor vuelve a /login?error=google si el login con Google falló.
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('error') === 'google') {
+      setError('No pudimos iniciar sesión con Google. Intenta nuevamente.');
+    }
+  }, [location.search]);
+
   useEffect(() => {
     if (location.state?.mode) {
       setIsSignup(location.state.mode === 'signup');
@@ -53,7 +60,6 @@ export default function Login() {
           return;
         }
         await signup(email, password, trimmedName);
-        sendWelcomeEmail(email, trimmedName);
       } else {
         await login(email, password);
       }
@@ -61,10 +67,12 @@ export default function Login() {
       navigate('/app');
     } catch (error) {
       console.error(error);
-      if (error.code === 'auth/user-not-found') {
-        setError('Usuario no encontrado');
-      } else if (error.code === 'auth/wrong-password') {
-        setError('Contraseña incorrecta');
+      if (error.code === 'auth/invalid-credential') {
+        setError('Email o contraseña incorrectos');
+      } else if (error.code === 'auth/user-disabled') {
+        setError('Tu cuenta está deshabilitada');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('El email no es válido');
       } else if (error.code === 'auth/email-already-in-use') {
         setError('El email ya está registrado');
       } else if (error.code === 'auth/weak-password') {
@@ -85,26 +93,10 @@ export default function Login() {
     try {
       setError('');
       await resetPassword(email);
-      setResetFeedback('Te enviamos un enlace para restablecer la contraseña.');
+      setResetFeedback('Si hay una cuenta con ese email, te enviamos un enlace para restablecer la contraseña.');
     } catch (err) {
       console.error(err);
-      if (err.code === 'auth/user-not-found') {
-        setError('No encontramos una cuenta con ese email');
-      } else {
-        setError('No pudimos enviar el correo. Intenta más tarde.');
-      }
-    }
-  }
-
-  async function sendWelcomeEmail(email, name) {
-    try {
-      await fetch('/api/send-welcome', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name })
-      });
-    } catch (error) {
-      console.warn('No se pudo enviar el correo de bienvenida:', error);
+      setError('No pudimos enviar el correo. Intenta más tarde.');
     }
   }
 

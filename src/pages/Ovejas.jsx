@@ -9,7 +9,7 @@ import {
   updateDoc,
   orderBy,
   deleteDoc,
-} from 'firebase/firestore';
+} from '../lib/db';
 import { db } from '../firebase/config';
 import { Plus, Edit2, Trash2, X, Clock, RotateCcw, Ban } from 'lucide-react';
 import { useCampo } from '../firebase/CampoContext';

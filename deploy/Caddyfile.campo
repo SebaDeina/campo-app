@@ -1,0 +1,17 @@
+# Bloque para /etc/caddy/Caddyfile. La app escucha solo en loopback.
+campo.nimbodata.com {
+    encode zstd gzip
+    log {
+        output file /var/log/caddy/campo-access.log {
+            roll_size 5MiB
+            roll_keep 2
+        }
+    }
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+    reverse_proxy 127.0.0.1:3600
+}
