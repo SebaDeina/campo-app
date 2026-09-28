@@ -5,10 +5,12 @@ import { SESSION_COOKIE, parseCookies, sessionUid } from './sessions.js';
 import { createMailer } from './mail.js';
 import { authRoutes } from './routes/auth.js';
 import { adminRoutes } from './routes/admin.js';
+import { dataRoutes } from './routes/data.js';
+import { camposRoutes } from './routes/campos.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-export function createApp({ db, config, mailer = createMailer(config), fetchImpl = fetch, extraRoutes = [] }) {
+export function createApp({ db, config, mailer = createMailer(config), fetchImpl = fetch }) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
@@ -36,7 +38,8 @@ export function createApp({ db, config, mailer = createMailer(config), fetchImpl
   });
   app.use('/api/auth', authRoutes({ db, config, mailer, fetchImpl }));
   app.use('/api/admin', adminRoutes({ db, config }));
-  for (const [path, router] of extraRoutes) app.use(path, router);
+  app.use('/api/db', dataRoutes({ db, config }));
+  app.use('/api', camposRoutes({ db, config }));
   app.use('/api', () => {
     throw new HttpError(404, 'No encontrado');
   });

@@ -17,7 +17,7 @@ export const FIREBASE_VECTOR = {
   password: 'user1password',
 };
 
-export function makeApp({ env = {}, fetchImpl, extraRoutes } = {}) {
+export function makeApp({ env = {}, fetchImpl } = {}) {
   const db = openDb(':memory:');
   const config = loadConfig({
     PUBLIC_URL: 'http://campo.test',
@@ -32,7 +32,7 @@ export function makeApp({ env = {}, fetchImpl, extraRoutes } = {}) {
     sendWelcome: async (email, name) => { mails.push({ type: 'welcome', email, name }); },
     sendPasswordReset: async (email, link) => { mails.push({ type: 'reset', email, link }); },
   };
-  const app = createApp({ db, config, mailer, fetchImpl, extraRoutes: extraRoutes?.({ db, config }) });
+  const app = createApp({ db, config, mailer, fetchImpl });
   return { app, db, config, mails };
 }
 

@@ -13,7 +13,12 @@ export function putDoc(db, collection, id, data) {
   `).run(collection, id, JSON.stringify(data));
 }
 
-export function deleteDoc(db, collection, id) {
+// Mueve el documento a deleted_docs antes de sacarlo de docs.
+export function deleteDoc(db, collection, id, deletedBy = null) {
+  db.prepare(`
+    INSERT INTO deleted_docs (collection, id, data, raw, created_at, deleted_by)
+    SELECT collection, id, data, raw, created_at, ? FROM docs WHERE collection = ? AND id = ?
+  `).run(deletedBy, collection, id);
   return db.prepare('DELETE FROM docs WHERE collection = ? AND id = ?').run(collection, id).changes > 0;
 }
 

@@ -46,6 +46,19 @@ const MIGRATIONS = [
     used_at    TEXT
   );
   `,
+  // Los borrados definitivos se guardan acá: nada se pierde aunque se vacíe la papelera.
+  `
+  CREATE TABLE deleted_docs (
+    collection TEXT NOT NULL,
+    id         TEXT NOT NULL,
+    data       TEXT NOT NULL,
+    raw        TEXT,
+    created_at TEXT,
+    deleted_at TEXT NOT NULL DEFAULT ${NOW},
+    deleted_by TEXT
+  );
+  CREATE INDEX deleted_docs_ref ON deleted_docs (collection, id);
+  `,
 ];
 
 export function openDb(path) {
