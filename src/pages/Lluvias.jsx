@@ -6,6 +6,7 @@ import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Comp
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCampo } from '../firebase/CampoContext';
+import { useNuevoParam } from '../lib/useNuevoParam';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 
@@ -85,6 +86,7 @@ async function parseXlsx(file) {
 export default function Lluvias() {
   const [lluvias, setLluvias] = useState([]);
   const [loading, setLoading] = useState(true);
+  useNuevoParam(() => setShowModal(true));
   const [showModal, setShowModal] = useState(false);
   const [importing, setImporting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);

@@ -34,36 +34,30 @@ export default function Dashboard() {
       const today = new Date();
       const todayStart = startOfDay(today);
 
-      // Total de ovejas activas
+      // Stock: ovejas activas (no están en la papelera) y sin baja (faena, muerte, venta...)
       const ovejasQuery = query(
         collection(db, 'ovejas'),
         where('campoId', '==', campoId),
         where('activa', '==', true)
       );
       const ovejasSnapshot = await getDocs(ovejasQuery);
-      const totalOvejas = ovejasSnapshot.size;
+      const enStock = ovejasSnapshot.docs.map((d) => d.data()).filter((data) => !data.baja);
+      const totalOvejas = enStock.length;
 
       // Ovejas gestantes y alertas de parto
-      const gestantesQuery = query(
-        collection(db, 'ovejas'),
-        where('campoId', '==', campoId),
-        where('activa', '==', true),
-        where('reproductivo.gestante', '==', true)
-      );
-      const gestantesSnapshot = await getDocs(gestantesQuery);
-      const ovejasGestantes = gestantesSnapshot.size;
+      const gestantes = enStock.filter((data) => data.reproductivo?.gestante === true);
+      const ovejasGestantes = gestantes.length;
 
       // Calcular alertas de ovejas próximas a parir (< 30 días)
       const newAlerts = [];
-      gestantesSnapshot.forEach(doc => {
-        const data = doc.data();
+      gestantes.forEach((data) => {
         if (data.reproductivo?.fechaParto) {
           const fechaParto = data.reproductivo.fechaParto.toDate();
           const diasRestantes = differenceInDays(fechaParto, today);
           if (diasRestantes > 0 && diasRestantes <= 30) {
             newAlerts.push({
               type: 'warning',
-              message: `${data.caravana || 'Oveja sin caravana'} próxima a parir en ${diasRestantes} días`,
+              message: `Oveja ${data.numeroCaravana || 'sin caravana'} próxima a parir en ${diasRestantes} días`,
               link: '/app/ovejas'
             });
           }
@@ -236,7 +230,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <PawPrint size={32} />
             <div>
-              <div className="stat-label">Total de Ovejas</div>
+              <div className="stat-label">Stock de ovejas</div>
               <div className="stat-value">{stats.totalOvejas}</div>
             </div>
           </div>

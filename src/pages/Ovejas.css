@@ -195,3 +195,87 @@
     font-size: 11px;
   }
 }
+
+/* Encabezado de cada evento del historial: fecha + acciones de editar/borrar */
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.timeline-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.timeline-actions .icon-btn {
+  width: 30px;
+  height: 30px;
+}
+
+/* Etiquetas de estado en las tablas */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-normal {
+  background: #eef4ec;
+  color: #2e7d32;
+}
+
+.badge-gestante {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.badge-baja {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+/* Bajas */
+.btn-baja {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffcc80;
+}
+
+.btn-baja:hover {
+  background: #ffe0b2;
+}
+
+.baja-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #fff3e0;
+  border: 1px solid #ffcc80;
+  color: #8a4b00;
+  font-size: 14px;
+}
+
+.baja-banner-nota {
+  margin-top: 4px;
+  color: #a15c00;
+}
+
+.baja-banner .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

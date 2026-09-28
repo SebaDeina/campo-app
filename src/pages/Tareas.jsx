@@ -5,6 +5,7 @@ import { Plus, Trash2, X, CheckCircle, Circle, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCampo } from '../firebase/CampoContext';
+import { useNuevoParam } from '../lib/useNuevoParam';
 
 function dateFromInput(value) {
   if (!value) return new Date();
@@ -15,6 +16,7 @@ function dateFromInput(value) {
 export default function Tareas() {
   const [tareas, setTareas] = useState([]);
   const [loading, setLoading] = useState(true);
+  useNuevoParam(() => setShowModal(true));
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     tipo: 'revision',

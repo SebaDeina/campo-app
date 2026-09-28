@@ -9,16 +9,26 @@ import {
   updateDoc,
   orderBy,
   deleteDoc,
+  deleteField,
+  writeBatch,
 } from '../lib/db';
 import { db } from '../firebase/config';
-import { Plus, Edit2, Trash2, X, Clock, RotateCcw, Ban } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Clock, RotateCcw, Ban, MinusCircle } from 'lucide-react';
 import { useCampo } from '../firebase/CampoContext';
+import { useNuevoParam } from '../lib/useNuevoParam';
 import './Ovejas.css';
 
 function dateFromInput(value) {
   if (!value) return new Date();
   const [year, month, day] = value.split('-').map(Number);
   return new Date(Date.UTC(year, (month || 1) - 1, day || 1, 12, 0, 0));
+}
+
+// Inversa de dateFromInput: Timestamp/Date → 'YYYY-MM-DD' para un <input type="date">.
+function inputFromDate(fecha) {
+  if (!fecha) return new Date().toISOString().split('T')[0];
+  const date = fecha.toDate ? fecha.toDate() : new Date(fecha);
+  return date.toISOString().split('T')[0];
 }
 
 function formatFechaLarga(fecha) {
@@ -30,6 +40,20 @@ function formatFechaLarga(fecha) {
     month: 'short',
     day: 'numeric',
   });
+}
+
+// Motivos por los que una oveja sale del stock. La oveja no se borra: queda con
+// `baja: { motivo, fecha, nota }` y su historial completo.
+const MOTIVOS_BAJA = [
+  { value: 'faena', label: 'Faena' },
+  { value: 'muerte', label: 'Muerte' },
+  { value: 'cesion', label: 'Cesión' },
+  { value: 'robo', label: 'Robo' },
+  { value: 'venta', label: 'Venta' },
+];
+
+function motivoBajaLabel(motivo) {
+  return MOTIVOS_BAJA.find((m) => m.value === motivo)?.label || motivo;
 }
 
 function findOvejaPorCaravana(lista, caravana) {
@@ -251,10 +275,20 @@ export default function Ovejas() {
   const [vista, setVista] = useState('listado');
   const [selectedOvejaId, setSelectedOvejaId] = useState(null);
   const [showHistorialModal, setShowHistorialModal] = useState(false);
+  const [editingEventoId, setEditingEventoId] = useState(null);
+  const [bajaOveja, setBajaOveja] = useState(null);
+  const [bajaForm, setBajaForm] = useState({ motivo: 'venta', fecha: '', nota: '' });
+  const [savingBaja, setSavingBaja] = useState(false);
   const [showDetalleModal, setShowDetalleModal] = useState(false);
   const [showPesoModal, setShowPesoModal] = useState(false);
 
   const { selectedCampoId, loadingCampos } = useCampo();
+
+  // Accesos directos del header: ?nuevo=evento | ?nuevo=oveja
+  useNuevoParam((nuevo) => {
+    if (nuevo === 'evento') openHistorialModal();
+    if (nuevo === 'oveja') openNuevaOveja();
+  }, !loading);
 
   const ovejaActionRowStyle = {
     display: 'flex',
@@ -421,7 +455,36 @@ export default function Ovejas() {
     const numeroDefault =
       selectedOveja?.numeroCaravana || ovejas[0]?.numeroCaravana || '';
     resetHistorialForm(numeroDefault);
+    setEditingEventoId(null);
     setShowHistorialModal(true);
+  }
+
+  function openNuevaOveja() {
+    resetForm();
+    setEditingOveja(null);
+    setShowModal(true);
+  }
+
+  function openEditarEvento(evento) {
+    setHistorialForm({
+      numeroCaravana: evento.numeroCaravana || '',
+      fecha: inputFromDate(evento.fecha),
+      titulo: evento.titulo || '',
+      detalle: evento.detalle || '',
+    });
+    setEditingEventoId(evento.id);
+    setShowHistorialModal(true);
+  }
+
+  async function handleEliminarEvento(evento) {
+    if (!window.confirm(`¿Borrar el evento "${evento.titulo}"?`)) return;
+    try {
+      await deleteDoc(doc(db, 'ovejaHistorial', evento.id));
+      loadHistorial(selectedCampoId);
+    } catch (error) {
+      console.error('Error borrando evento:', error);
+      alert(error.message || 'No se pudo borrar el evento');
+    }
   }
 
   function openPesoModal() {
@@ -449,22 +512,25 @@ export default function Ovejas() {
     }
 
     try {
-      const fechaEvento = dateFromInput(historialForm.fecha);
-      await addDoc(collection(db, 'ovejaHistorial'), {
-        campoId: selectedCampoId,
+      const evento = {
         ovejaId: ovejaSeleccionada.id,
         numeroCaravana: ovejaSeleccionada.numeroCaravana,
         titulo: historialForm.titulo.trim(),
         detalle: historialForm.detalle.trim(),
-        fecha: fechaEvento,
-        createdAt: new Date(),
-      });
+        fecha: dateFromInput(historialForm.fecha),
+      };
+      if (editingEventoId) {
+        await updateDoc(doc(db, 'ovejaHistorial', editingEventoId), { ...evento, updatedAt: new Date() });
+      } else {
+        await addDoc(collection(db, 'ovejaHistorial'), { ...evento, campoId: selectedCampoId, createdAt: new Date() });
+      }
       resetHistorialForm();
+      setEditingEventoId(null);
       setShowHistorialModal(false);
       loadHistorial(selectedCampoId);
     } catch (error) {
       console.error('Error guardando historial:', error);
-      alert('No se pudo guardar el historial');
+      alert(error.message || 'No se pudo guardar el evento');
     }
   }
 
@@ -656,6 +722,70 @@ export default function Ovejas() {
     }
   }
 
+  function openBajaModal(oveja, e) {
+    e?.stopPropagation();
+    setBajaForm({ motivo: 'venta', fecha: new Date().toISOString().split('T')[0], nota: '' });
+    setBajaOveja(oveja);
+  }
+
+  // Marca la baja y deja constancia en el historial, en una sola operación.
+  async function handleBajaSubmit(e) {
+    e.preventDefault();
+    if (!bajaOveja || !selectedCampoId) return;
+    setSavingBaja(true);
+    try {
+      const fecha = dateFromInput(bajaForm.fecha);
+      const nota = bajaForm.nota.trim();
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'ovejas', bajaOveja.id), {
+        baja: { motivo: bajaForm.motivo, fecha, nota },
+        updatedAt: new Date(),
+      });
+      batch.set(doc(collection(db, 'ovejaHistorial')), {
+        campoId: selectedCampoId,
+        ovejaId: bajaOveja.id,
+        numeroCaravana: bajaOveja.numeroCaravana,
+        titulo: `Baja: ${motivoBajaLabel(bajaForm.motivo)}`,
+        detalle: nota || 'Sin observaciones',
+        fecha,
+        createdAt: new Date(),
+      });
+      await batch.commit();
+      setBajaOveja(null);
+      loadOvejas(selectedCampoId);
+      loadHistorial(selectedCampoId);
+    } catch (error) {
+      console.error('Error dando de baja:', error);
+      alert(error.message || 'No se pudo dar de baja la oveja');
+    } finally {
+      setSavingBaja(false);
+    }
+  }
+
+  async function handleRevertirBaja(oveja) {
+    const motivo = motivoBajaLabel(oveja.baja?.motivo);
+    if (!window.confirm(`¿Revertir la baja (${motivo}) de la oveja #${oveja.numeroCaravana}? Vuelve a contar en el stock.`)) return;
+    try {
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'ovejas', oveja.id), { baja: deleteField(), updatedAt: new Date() });
+      batch.set(doc(collection(db, 'ovejaHistorial')), {
+        campoId: selectedCampoId,
+        ovejaId: oveja.id,
+        numeroCaravana: oveja.numeroCaravana,
+        titulo: 'Baja revertida',
+        detalle: `Se revirtió la baja por ${motivo}. La oveja vuelve al stock.`,
+        fecha: new Date(),
+        createdAt: new Date(),
+      });
+      await batch.commit();
+      loadOvejas(selectedCampoId);
+      loadHistorial(selectedCampoId);
+    } catch (error) {
+      console.error('Error revirtiendo baja:', error);
+      alert(error.message || 'No se pudo revertir la baja');
+    }
+  }
+
   function calcularEdad(fechaNacimiento) {
     if (!fechaNacimiento) return 'N/A';
     const fecha = fechaNacimiento.toDate ? fechaNacimiento.toDate() : new Date(fechaNacimiento);
@@ -680,6 +810,9 @@ export default function Ovejas() {
     })
     : [];
   const ovejasOrdenadas = ovejas;
+  // El stock son las ovejas sin baja; las dadas de baja siguen en genealogía e historial.
+  const ovejasEnStock = ovejasOrdenadas.filter((ov) => !ov.baja);
+  const ovejasDeBaja = ovejasOrdenadas.filter((ov) => ov.baja);
 
   useEffect(() => {
     if (selectedOveja) {
@@ -696,16 +829,17 @@ export default function Ovejas() {
 
   useEffect(() => {
     function handleKeyDown(event) {
-      if (event.key === 'Escape') {
-        if (showDetalleModal) setShowDetalleModal(false);
-        if (showHistorialModal) setShowHistorialModal(false);
-        if (showModal) setShowModal(false);
-        if (showPesoModal) setShowPesoModal(false);
-      }
+      if (event.key !== 'Escape') return;
+      // Cierra solo el modal de arriba (los de acción se abren sobre la ficha).
+      if (bajaOveja) setBajaOveja(null);
+      else if (showHistorialModal) setShowHistorialModal(false);
+      else if (showPesoModal) setShowPesoModal(false);
+      else if (showModal) setShowModal(false);
+      else if (showDetalleModal) setShowDetalleModal(false);
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showDetalleModal, showHistorialModal, showModal, showPesoModal]);
+  }, [bajaOveja, showDetalleModal, showHistorialModal, showModal, showPesoModal]);
 
   function handleOverlayClick(e, setter) {
     if (e.target === e.currentTarget) setter(false);
@@ -749,14 +883,10 @@ export default function Ovejas() {
               onClick={openHistorialModal}
             >
               <Clock size={18} />
-              Registrar historial
+              Registrar evento
             </button>
             <button
-              onClick={() => {
-                resetForm();
-                setEditingOveja(null);
-                setShowModal(true);
-              }}
+              onClick={openNuevaOveja}
               className="btn btn-primary"
               style={primaryActionButtonStyle}
             >
@@ -781,6 +911,12 @@ export default function Ovejas() {
           Árbol genealógico
         </button>
         <button
+          className={`tab-btn ${vista === 'bajas' ? 'active' : ''}`}
+          onClick={() => setVista('bajas')}
+        >
+          Bajas ({ovejasDeBaja.length})
+        </button>
+        <button
           className={`tab-btn ${vista === 'papelera' ? 'active' : ''}`}
           onClick={() => setVista('papelera')}
         >
@@ -798,6 +934,58 @@ export default function Ovejas() {
 
       {vista === 'genealogia' ? (
         <GenealogiaView ovejas={ovejasOrdenadas} />
+      ) : vista === 'bajas' ? (
+        ovejasDeBaja.length === 0 ? (
+          <div className="card">
+            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px' }}>
+              No hay ovejas dadas de baja. Usá &quot;Dar de baja&quot; en la ficha de una oveja cuando se faena, muere, se cede, se roba o se vende.
+            </p>
+          </div>
+        ) : (
+          <div className="card table-scroll">
+            <table className="table ovejas-table">
+              <thead>
+                <tr>
+                  <th>Caravana</th>
+                  <th>Motivo</th>
+                  <th>Fecha</th>
+                  <th className="col-hide-mobile">Nota</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ovejasDeBaja.map((ov) => (
+                  <tr
+                    key={ov.id}
+                    onClick={() => {
+                      setSelectedOvejaId(ov.id);
+                      setShowDetalleModal(true);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td><strong>{ov.numeroCaravana}</strong></td>
+                    <td><span className="badge badge-baja">{motivoBajaLabel(ov.baja.motivo)}</span></td>
+                    <td>{formatFechaLarga(ov.baja.fecha)}</td>
+                    <td className="col-hide-mobile">{ov.baja.nota || '—'}</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <div className="table-actions">
+                        <button
+                          className="icon-btn"
+                          title="Revertir baja"
+                          aria-label="Revertir baja"
+                          onClick={() => handleRevertirBaja(ov)}
+                          style={{ color: 'var(--primary)' }}
+                        >
+                          <RotateCcw size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
       ) : vista === 'papelera' ? (
         <>
           {papelera.length === 0 ? (
@@ -865,10 +1053,10 @@ export default function Ovejas() {
         </>
       ) : (
         <>
-          {ovejas.length === 0 ? (
+          {ovejasEnStock.length === 0 ? (
             <div className="card">
               <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px' }}>
-                No hay ovejas registradas. ¡Agrega tu primera oveja!
+                No hay ovejas en stock. ¡Agrega tu primera oveja!
               </p>
             </div>
           ) : (
@@ -886,7 +1074,7 @@ export default function Ovejas() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ovejasOrdenadas.map((oveja) => (
+                  {ovejasEnStock.map((oveja) => (
                     <tr
                       key={oveja.id}
                       onClick={() => {
@@ -923,8 +1111,16 @@ export default function Ovejas() {
                             <Edit2 size={18} />
                           </button>
                           <button
+                            className="icon-btn"
+                            title="Dar de baja (faena, muerte, venta...)"
+                            aria-label="Dar de baja"
+                            onClick={(e) => openBajaModal(oveja, e)}
+                          >
+                            <MinusCircle size={18} />
+                          </button>
+                          <button
                             className="icon-btn icon-btn-danger"
-                            title="Eliminar"
+                            title="Eliminar (error de carga)"
                             onClick={(e) => handleDelete(oveja, e)}
                           >
                             <Trash2 size={18} />
@@ -953,7 +1149,15 @@ export default function Ovejas() {
                 </p>
                 <h2 style={{ marginTop: '2px' }}>#{selectedOveja.numeroCaravana}</h2>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {!selectedOveja.baja && (
+                  <button
+                    className="btn btn-small btn-baja"
+                    onClick={(e) => openBajaModal(selectedOveja, e)}
+                  >
+                    <MinusCircle size={16} /> Dar de baja
+                  </button>
+                )}
                 <button
                   className="icon-btn"
                   title="Editar"
@@ -977,6 +1181,20 @@ export default function Ovejas() {
                 </button>
               </div>
             </div>
+
+            {selectedOveja.baja && (
+              <div className="baja-banner">
+                <div>
+                  <strong>Dada de baja: {motivoBajaLabel(selectedOveja.baja.motivo)}</strong>
+                  {' · '}{formatFechaLarga(selectedOveja.baja.fecha)}
+                  {selectedOveja.baja.nota && <div className="baja-banner-nota">{selectedOveja.baja.nota}</div>}
+                  <div className="baja-banner-nota">No cuenta en el stock.</div>
+                </div>
+                <button className="btn btn-small" onClick={() => handleRevertirBaja(selectedOveja)}>
+                  <RotateCcw size={14} /> Revertir
+                </button>
+              </div>
+            )}
 
             <div className="detalle-oveja">
               <div className="detalle-grid">
@@ -1040,7 +1258,29 @@ export default function Ovejas() {
                       <div key={item.id} className="timeline-item">
                         <div className="timeline-dot" />
                         <div className="timeline-content">
-                          <p className="timeline-date">{formatFechaLarga(item.fecha)}</p>
+                          <div className="timeline-header">
+                            <p className="timeline-date">{formatFechaLarga(item.fecha)}</p>
+                            <div className="timeline-actions">
+                              <button
+                                type="button"
+                                className="icon-btn"
+                                title="Editar evento"
+                                aria-label="Editar evento"
+                                onClick={() => openEditarEvento(item)}
+                              >
+                                <Edit2 size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                className="icon-btn icon-btn-danger"
+                                title="Borrar evento"
+                                aria-label="Borrar evento"
+                                onClick={() => handleEliminarEvento(item)}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </div>
                           <p className="timeline-title">{item.titulo}</p>
                           <p className="timeline-detail">{item.detalle}</p>
                         </div>
@@ -1092,6 +1332,67 @@ export default function Ovejas() {
         </div>
       )}
 
+      {bajaOveja && (
+        <div className="modal-overlay" onClick={(e) => handleOverlayClick(e, () => setBajaOveja(null))}>
+          <div className="modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Dar de baja #{bajaOveja.numeroCaravana}</h2>
+              <button onClick={() => setBajaOveja(null)} className="close-btn">
+                <X size={24} />
+              </button>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', marginTop: 0 }}>
+              La oveja deja de contar en el stock pero conserva su historial. Se puede revertir desde la solapa Bajas.
+            </p>
+            <form onSubmit={handleBajaSubmit}>
+              <div className="input-group">
+                <label>Motivo *</label>
+                <select
+                  value={bajaForm.motivo}
+                  onChange={(e) => setBajaForm((prev) => ({ ...prev, motivo: e.target.value }))}
+                  required
+                >
+                  {MOTIVOS_BAJA.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="input-group">
+                <label>Fecha *</label>
+                <input
+                  type="date"
+                  value={bajaForm.fecha}
+                  onChange={(e) => setBajaForm((prev) => ({ ...prev, fecha: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="input-group">
+                <label>Nota</label>
+                <textarea
+                  rows={3}
+                  value={bajaForm.nota}
+                  onChange={(e) => setBajaForm((prev) => ({ ...prev, nota: e.target.value }))}
+                  placeholder="Ej: vendida a Juan Pérez, $120.000"
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={savingBaja}>
+                  {savingBaja ? 'Guardando...' : 'Dar de baja'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBajaOveja(null)}
+                  className="btn"
+                  style={{ flex: 1, background: 'var(--border)' }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {showHistorialModal && (
         <div
           className="modal-overlay"
@@ -1099,7 +1400,7 @@ export default function Ovejas() {
         >
           <div className="modal" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">Registrar historial</h2>
+              <h2 className="modal-title">{editingEventoId ? 'Editar evento' : 'Registrar evento'}</h2>
               <button onClick={() => setShowHistorialModal(false)} className="close-btn">
                 <X size={24} />
               </button>
@@ -1155,7 +1456,7 @@ export default function Ovejas() {
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                  Guardar historial
+                  {editingEventoId ? 'Guardar cambios' : 'Guardar evento'}
                 </button>
                 <button
                   type="button"

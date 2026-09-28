@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../firebase/AuthContext';
 import { useCampo } from '../firebase/CampoContext';
-import { LogOut, Settings, Map, Menu, X, Droplets, CalendarCheck, CloudSun, UserPlus, ListChecks } from 'lucide-react';
+import { LogOut, Settings, Map, Menu, X, Droplets, CalendarCheck, CloudSun, UserPlus, ListChecks, ClipboardEdit, PawPrint } from 'lucide-react';
 import logo from '../img/icons8-grass-50.png';
 
 const NAV_LINKS = [
@@ -26,13 +26,25 @@ export default function Header() {
       key: 'lluvias',
       label: 'Registrar lluvia',
       icon: Droplets,
-      onClick: () => navigate('/app/lluvias')
+      onClick: () => navigate('/app/lluvias?nuevo=1')
+    },
+    {
+      key: 'evento',
+      label: 'Registrar evento',
+      icon: ClipboardEdit,
+      onClick: () => navigate('/app/ovejas?nuevo=evento')
+    },
+    {
+      key: 'oveja',
+      label: 'Nueva oveja',
+      icon: PawPrint,
+      onClick: () => navigate('/app/ovejas?nuevo=oveja')
     },
     {
       key: 'tareas',
       label: 'Nueva tarea',
       icon: CalendarCheck,
-      onClick: () => navigate('/app/tareas')
+      onClick: () => navigate('/app/tareas?nuevo=1')
     },
     {
       key: 'clima',
