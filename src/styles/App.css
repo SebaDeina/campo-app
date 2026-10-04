@@ -847,7 +847,7 @@ body {
 /* Cards del dashboard clickeables */
 a.stat-card-link {
   display: block;
-  color: inherit;
+  color: white;
   text-decoration: none;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
