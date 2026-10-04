@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './firebase/AuthContext';
 import { CampoProvider, useCampo } from './firebase/CampoContext';
 import Header from './components/Header';
+import BottomNav from './components/BottomNav';
 import CampoOnboarding from './components/CampoOnboarding';
 import Login from './components/Login';
 import Landing from './pages/Landing';
@@ -91,6 +92,7 @@ function CampoLayout() {
 
       <Header />
       <Outlet />
+      <BottomNav />
     </>
   );
 }

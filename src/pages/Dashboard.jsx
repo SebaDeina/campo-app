@@ -246,7 +246,7 @@ export default function Dashboard() {
 
       {/* Estadísticas principales */}
       <div className="grid grid-2" style={{ marginBottom: '25px' }}>
-        <div className="stat-card">
+        <Link to="/app/ovejas" className="stat-card stat-card-link">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <PawPrint size={32} />
             <div>
@@ -254,9 +254,9 @@ export default function Dashboard() {
               <div className="stat-value">{stats.totalOvejas}</div>
             </div>
           </div>
-        </div>
+        </Link>
 
-        <div className="stat-card">
+        <Link to="/app/ovejas" className="stat-card stat-card-link">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <AlertCircle size={32} />
             <div>
@@ -264,9 +264,9 @@ export default function Dashboard() {
               <div className="stat-value">{stats.ovejasGestantes}</div>
             </div>
           </div>
-        </div>
+        </Link>
 
-        <div className="stat-card">
+        <Link to="/app/lluvias" className="stat-card stat-card-link">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Droplets size={32} />
             <div>
@@ -274,9 +274,9 @@ export default function Dashboard() {
               <div className="stat-value">{stats.lluviasMes}mm</div>
             </div>
           </div>
-        </div>
+        </Link>
 
-        <div className="stat-card">
+        <Link to="/app/tareas" className="stat-card stat-card-link">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Calendar size={32} />
             <div>
@@ -285,7 +285,7 @@ export default function Dashboard() {
               <div style={{ fontSize: '12px', opacity: 0.9 }}>{stats.tareasHoy} para hoy</div>
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Tareas próximas */}
