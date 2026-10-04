@@ -8,6 +8,7 @@ import {
 import { getDoc, putDoc } from '../store.js';
 import { newUid } from '../ids.js';
 import { nowTimestamp } from '../codec.js';
+import { createAuthLimiters } from '../rate-limit.js';
 
 const OAUTH_COOKIE = 'campo_oauth';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -28,6 +29,7 @@ function findByEmail(db, email) {
 
 export function authRoutes({ db, config, mailer, fetchImpl = fetch }) {
   const router = Router();
+  const limits = createAuthLimiters();
   const cookieBase = { httpOnly: true, sameSite: 'lax', secure: config.secureCookies, path: '/' };
 
   function startSession(res, uid) {
@@ -51,6 +53,7 @@ export function authRoutes({ db, config, mailer, fetchImpl = fetch }) {
   }
 
   router.post('/signup', async (req, res) => {
+    limits.signupIp.hit(res, req.ip);
     const email = normalizeEmail(req.body?.email);
     const displayName = (req.body?.displayName || '').trim();
     if (!EMAIL_RE.test(email)) throw new HttpError(400, 'Email inválido', 'auth/invalid-email');
@@ -63,6 +66,11 @@ export function authRoutes({ db, config, mailer, fetchImpl = fetch }) {
   });
 
   router.post('/login', async (req, res) => {
+    // Antes de tocar scrypt, que es lo caro. Por IP y por IP+email: así quien ataca una cuenta
+    // desde otra IP no puede dejar afuera a su dueño.
+    const cuenta = `${req.ip}|${normalizeEmail(req.body?.email).toLowerCase()}`;
+    limits.loginIp.hit(res, req.ip);
+    limits.loginCuenta.hit(res, cuenta);
     const account = findByEmail(db, normalizeEmail(req.body?.email));
     const { ok, needsRehash } = account
       ? await verifyPassword(account, req.body?.password, config.firebaseScrypt)
@@ -74,6 +82,7 @@ export function authRoutes({ db, config, mailer, fetchImpl = fetch }) {
       db.prepare("UPDATE auth_accounts SET password_algo = 'scrypt', password_hash = ?, password_salt = NULL WHERE uid = ?")
         .run(await hashPassword(req.body.password), account.uid);
     }
+    limits.loginCuenta.reset(cuenta);
     startSession(res, account.uid);
     res.json(publicUser(db, config, account));
   });
@@ -110,6 +119,7 @@ export function authRoutes({ db, config, mailer, fetchImpl = fetch }) {
   const redirectUri = `${config.publicUrl}/api/auth/google/callback`;
 
   router.get('/google', (req, res) => {
+    limits.googleIp.hit(res, req.ip);
     if (!config.google) throw new HttpError(503, 'El login con Google no está configurado');
     const state = randomToken(16);
     const verifier = randomToken(32);
@@ -134,6 +144,7 @@ export function authRoutes({ db, config, mailer, fetchImpl = fetch }) {
       res.clearCookie(OAUTH_COOKIE, cookieBase);
       res.redirect('/login?error=google');
     };
+    limits.googleIp.hit(res, req.ip);
     if (!config.google) return fail('no configurado');
     const [state, verifier] = (req.cookies[OAUTH_COOKIE] || '').split('.');
     if (!state || state !== req.query.state || !req.query.code) return fail('state inválido');
@@ -177,6 +188,9 @@ export function authRoutes({ db, config, mailer, fetchImpl = fetch }) {
 
   // --- Recuperar contraseña ---
   router.post('/reset', async (req, res) => {
+    // Cuenta exista o no el email, para no revelar quién está registrado. Frena el spam de mails.
+    limits.resetIp.hit(res, req.ip);
+    limits.resetEmail.hit(res, normalizeEmail(req.body?.email).toLowerCase());
     const account = findByEmail(db, normalizeEmail(req.body?.email));
     if (account && !account.disabled) {
       const token = randomToken(32);
@@ -190,6 +204,7 @@ export function authRoutes({ db, config, mailer, fetchImpl = fetch }) {
   });
 
   router.post('/reset/confirm', async (req, res) => {
+    limits.confirmIp.hit(res, req.ip);
     validatePassword(req.body?.password);
     const row = db.prepare('SELECT * FROM password_resets WHERE token_hash = ?').get(sha256(String(req.body?.token || '')));
     if (!row || row.used_at || row.expires_at < new Date().toISOString()) {
